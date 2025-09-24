@@ -1,0 +1,978 @@
+
+                <!DOCTYPE html>
+                <html lang="zh">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>用户设置</title>
+                  <style>
+                    *,
+                    *::before,
+                    *::after {
+                      box-sizing: border-box;
+                      margin: 0;
+                    }
+                    .iframe-outer {
+                      position: fixed;
+                      top: 0;
+                      left: 0;
+                      bottom: 0;
+                      right: 0;
+                      display: flex;
+                      justify-content: center;
+                      background-color: #E0E0E0;
+                    }
+                    .iframe-wrapper {
+                      width: 100%;
+                      height: 100%;
+                      margin: 0 auto;
+                      transform-origin: center top;
+                      flex-shrink: 0;
+                    }
+                    #dynamicIframe {
+                      border: none;
+                      width: 100%;
+                      height: 100%;
+                    }
+                  </style>
+                  <script>
+                const width = 1920
+                const height = 1080
+                const resolutionRatio = width && height ? width / height : 1
+                const pageNameMap = {
+                  'home_page': '主页',
+    'create_character_page': '创建人物',
+    'chat_page': '聊天',
+    'user_settings_page': '用户设置'
+                }
+                function setIframeSize(w, h) {
+                  const currentContainerRadio = w / h
+                  let widthValue = w
+                  let heightValue = h
+                  let zoom = 1
+                  if (currentContainerRadio > resolutionRatio) {
+                    widthValue = h * resolutionRatio
+                    heightValue = h
+                  } else {
+                    widthValue = w
+                    heightValue = w / resolutionRatio
+                  }
+                  zoom = width ? widthValue / width : 1
+                  return {
+                    width: widthValue / zoom + 'px',
+                    height: heightValue / zoom + 'px',
+                    zoom,
+                  }
+                }
+                function adjustIframeSize() {
+                  const iframeWrapper = document.querySelector(".iframe-wrapper")
+                  const { width, height, zoom } = setIframeSize(window.innerWidth, window.innerHeight)
+                  iframeWrapper.style.height = height
+                  iframeWrapper.style.width = width
+                  iframeWrapper.style.transform = 'scale(' + zoom + ')'
+                }
+                function sanitizeFilename(name) {
+                  return name.replace(/[\/:*?"<>|]/g, '_')
+                }
+                function handlePostMessage(event) {
+                  if (!event.data) {
+                    return
+                  }
+                  const { type, targetPageId } = event.data
+                  const targetPageName = pageNameMap[targetPageId]
+                  if (type === "iframeNavigation" && targetPageId && targetPageName) {
+                    window.location.href = targetPageName + '.html'
+                  }
+                }
+                window.addEventListener('message', handlePostMessage)
+                window.onload = adjustIframeSize
+                window.onresize = adjustIframeSize
+                window.onunload = () => {
+                  window.removeEventListener('message', handlePostMessage)
+                }
+              </script>
+                </head>
+                <body>
+                  <div class="iframe-outer">
+                    <div class="iframe-wrapper">
+                      <iframe id="dynamicIframe" srcdoc='<html lang="简体中文" data-theme="light"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户设置</title>
+    <link href="./assets/static/uxbot/daisyui@5.css" rel="stylesheet" type="text/css">
+    <script src="./assets/static/uxbot/tailwind-browser@4.js"></script>
+    <link href="./assets/static/uxbot/daisyui-themes.css" rel="stylesheet" type="text/css">
+    <script src="./assets/3/3.1.1/iconify.min.js"></script>
+    <style>
+    /* daisyUI Theme Variables Customization */
+    :root {
+        /* AI Chat Platform Theme - Vibrant and Modern */
+        --color-primary: rgba(99, 102, 241, 1); /* Indigo #6366F1 */
+        --color-primary-content: rgba(255, 255, 255, 1);
+        --color-secondary: rgba(236, 72, 153, 1); /* Pink #EC4899 */
+        --color-secondary-content: rgba(255, 255, 255, 1);
+        --color-accent: rgba(34, 197, 94, 1); /* Green #22C55E */
+        --color-accent-content: rgba(255, 255, 255, 1);
+        --color-base-100: rgba(255, 255, 255, 1);
+        --color-base-200: rgba(248, 250, 252, 1); /* #F8FAFC */
+        --color-base-300: rgba(226, 232, 240, 1); /* #E2E8F0 */
+        --color-base-content: rgba(30, 41, 59, 1); /* #1E293B */
+        --color-success: rgba(34, 197, 94, 1);
+        --color-warning: rgba(251, 191, 36, 1);
+        --color-error: rgba(239, 68, 68, 1);
+        --color-info: rgba(59, 130, 246, 1);
+        --radius-box: 0.5rem; /* 8px for modern rounded feel */
+        --radius-field: 0.5rem;
+        --border: 1px;
+    }
+
+    /* Global component styles */
+    .transition-width {
+        transition: width 0.3s ease-in-out;
+    }
+
+    .nav-hover {
+        transition: all 0.15s ease-in-out;
+    }
+
+    .shadow-soft {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .shadow-card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Header height consistency */
+    .header-height {
+        height: 64px;
+    }
+
+    /* Sidebar dimensions */
+    .sidebar-expanded {
+        width: 280px;
+    }
+
+    .sidebar-collapsed {
+        width: 80px;
+    }
+
+    /* Focus styles for accessibility */
+    .focus-primary:focus {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
+
+    /* Pure color block styles for flat design */
+    .color-block-primary {
+        background: var(--color-primary);
+        color: var(--color-primary-content);
+    }
+
+    .color-block-secondary {
+        background: var(--color-secondary);
+        color: var(--color-secondary-content);
+    }
+
+    .color-block-accent {
+        background: var(--color-accent);
+        color: var(--color-accent-content);
+    }
+
+    /* Character avatar styles */
+    .character-avatar {
+        border-radius: var(--radius-box);
+        border: 2px solid var(--color-primary);
+    }
+
+    /* Chat bubble enhancements */
+    .chat-bubble-custom {
+        border-radius: var(--radius-box);
+        box-shadow: var(--shadow-soft);
+    }
+    </style> <style>
+    main {
+        background-image: radial-gradient(var(--color-base-300) 0.5px, transparent 0.5px);
+        background-size: 16px 16px;
+    }
+
+    .settings-panel {
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: opacity 0.3s ease-in-out, max-height 0s 0.3s;
+    }
+
+    .settings-panel:not(.hidden) {
+        opacity: 1;
+        max-height: 2000px; /* Large enough value */
+        transition: opacity 0.3s ease-in-out, max-height 0s;
+    }
+
+    .menu a.active {
+        background-color: var(--color-primary);
+        color: var(--color-primary-content);
+        background-image: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    }
+    .menu a.active .iconify {
+        color: var(--color-primary-content);
+    }
+    
+    .btn {
+        transition: transform 0.1s ease-out, box-shadow 0.2s ease;
+    }
+    .btn:active {
+        transform: scale(0.95);
+    }
+</style>
+  <script src="./assets/static/uxbot/25_6/holder.js"></script></head>
+  <body class="min-h-screen bg-base-200 flex flex-col">
+    <div data-section-id="common_header" data-section-type="common_header">
+        <div class="navbar bg-base-100 shadow-soft border-b border-base-300 header-height px-4">
+            <!-- Left section: Menu toggle and Logo -->
+            <div class="navbar-start">
+                <button class="btn btn-ghost btn-circle focus-primary" onclick="toggleSidebar()" aria-label="切换侧边栏">
+                    <span class="iconify" data-icon="heroicons:bars-3" data-width="24"></span>
+                </button>
+                <div class="flex items-center ml-2">
+                    <img alt="AI聊天平台 Logo" class="w-10 h-10 rounded-lg" data-src="placehold.co/40x40.png?text=AI">
+                    <span class="ml-3 text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hidden lg:block">AI人物聊天</span>
+                </div>
+            </div>
+
+            <!-- Center section: Current character info -->
+            <div class="navbar-center hidden xl:flex">
+                <div id="current-character-display" class="flex items-center gap-3 px-4 py-2 bg-base-200 rounded-full">
+                    <div class="avatar placeholder inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-content">
+                        <span class="iconify" data-icon="heroicons:user" data-width="16"></span>
+                    </div>
+                    <span class="text-sm font-medium text-base-content/70">选择一个人物开始对话</span>
+                </div>
+            </div>
+
+            <!-- Right section: User actions -->
+            <div class="navbar-end">
+                <!-- Theme toggle -->
+                <button class="btn btn-ghost btn-circle focus-primary mr-2" onclick="toggleTheme()" aria-label="切换主题">
+                    <span class="iconify" data-icon="heroicons:sun" data-width="20"></span>
+                </button>
+
+                <!-- Notifications -->
+                <div class="indicator mr-2">
+                    <span class="indicator-item badge badge-accent badge-sm">2</span>
+                    <button class="btn btn-ghost btn-circle focus-primary" aria-label="通知">
+                        <span class="iconify" data-icon="heroicons:bell" data-width="20"></span>
+                    </button>
+                </div>
+
+                <!-- User profile dropdown -->
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar focus-primary">
+                        <div class="avatar placeholder inline-flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-secondary-content">
+                            <span class="font-semibold text-sm">U</span>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-50 p-2 shadow-card bg-base-100 rounded-box w-52">
+                        <li class="menu-title">
+                            <span>用户中心</span>
+                        </li>
+                        <li>
+                            <a onclick="navigateTo(&#39;user_settings_page&#39;)" class="nav-hover focus-primary">
+                                <span class="iconify" data-icon="heroicons:cog-6-tooth" data-width="16"></span>
+                                <span>用户设置</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a onclick="navigateTo(&#39;home_page&#39;)" class="nav-hover focus-primary">
+                                <span class="iconify" data-icon="heroicons:home" data-width="16"></span>
+                                <span>返回主页</span>
+                            </a>
+                        </li>
+                        <div class="divider my-1"></div>
+                        <li>
+                            <a onclick="navigateTo(&#39;login_page&#39;)" class="nav-hover focus-primary text-error">
+                                <span class="iconify" data-icon="heroicons:arrow-right-on-rectangle" data-width="16"></span>
+                                <span>退出登录</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function() {
+        // Update current character display in header
+        window.updateHeaderCharacterDisplay = function(characterName, characterAvatar) {
+            const display = document.getElementById(&#39;current-character-display&#39;);
+            if (!display) return;
+            
+            const avatarEl = display.querySelector(&#39;.avatar&#39;);
+            const textEl = display.querySelector(&#39;span:last-child&#39;);
+            
+            if (characterName &amp;&amp; characterAvatar) {
+                avatarEl.innerHTML = `<img src="${characterAvatar}" alt="${characterName}" class="w-8 h-8 rounded-full object-cover" />`;
+                textEl.textContent = `正在与 ${characterName} 对话`;
+            } else {
+                avatarEl.innerHTML = `<span class="iconify" data-icon="heroicons:user" data-width="16"></span>`;
+                textEl.textContent = &#39;选择一个人物开始对话&#39;;
+            }
+        };
+
+        // Theme toggle functionality
+        window.toggleTheme = function() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute(&#39;data-theme&#39;) || &#39;light&#39;;
+            const newTheme = currentTheme === &#39;light&#39; ? &#39;dark&#39; : &#39;light&#39;;
+            
+            html.setAttribute(&#39;data-theme&#39;, newTheme);
+            localStorage.setItem(&#39;theme&#39;, newTheme);
+            
+            // Update icon
+            const themeIcon = document.querySelector(&#39;[onclick="toggleTheme()"] .iconify&#39;);
+            if (themeIcon) {
+                themeIcon.setAttribute(&#39;data-icon&#39;, newTheme === &#39;light&#39; ? &#39;heroicons:moon&#39; : &#39;heroicons:sun&#39;);
+            }
+        };
+
+        // Initialize theme
+        document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+            const savedTheme = localStorage.getItem(&#39;theme&#39;) || &#39;light&#39;;
+            document.documentElement.setAttribute(&#39;data-theme&#39;, savedTheme);
+            
+            const themeIcon = document.querySelector(&#39;[onclick="toggleTheme()"] .iconify&#39;);
+            if (themeIcon) {
+                themeIcon.setAttribute(&#39;data-icon&#39;, savedTheme === &#39;light&#39; ? &#39;heroicons:sun&#39; : &#39;heroicons:moon&#39;);
+            }
+        });
+    })();
+    </script>
+    <div class="flex flex-1">
+      <!--侧边栏--><div data-section-id="common_sidebar" data-section-type="common_sidebar">
+        <div class="h-full bg-base-100 border-r border-base-300 transition-width flex flex-col">
+            <!-- Sidebar header -->
+            <div class="p-4 border-b border-base-300">
+                <div class="flex items-center gap-3">
+                    <div class="avatar placeholder inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-content">
+                        <span class="iconify" data-icon="heroicons:chat-bubble-left-right" data-width="20"></span>
+                    </div>
+                    <div class="sidebar-text">
+                        <h2 class="font-bold text-base">AI聊天</h2>
+                        <p class="text-xs text-base-content/60">智能人物对话平台</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main navigation -->
+            <div class="flex-1 overflow-y-auto">
+                <ul class="menu p-4 gap-2">
+                    <!-- 主页 -->
+                    <li>
+                        <a onclick="navigateTo(&#39;home_page&#39;)" class="nav-hover focus-primary group" data-current-page="home_page">
+                            <span class="iconify" data-icon="heroicons:home" data-width="20"></span>
+                            <span class="sidebar-text font-medium">主页</span>
+                        </a>
+                    </li>
+
+                    <!-- 创建人物 -->
+                    <li>
+                        <a onclick="navigateTo(&#39;create_character_page&#39;)" class="nav-hover focus-primary group" data-current-page="create_character_page">
+                            <span class="iconify" data-icon="heroicons:plus-circle" data-width="20"></span>
+                            <span class="sidebar-text font-medium">创建人物</span>
+                        </a>
+                    </li>
+
+                    <!-- 当前聊天 -->
+                    <li>
+                        <a onclick="navigateTo(&#39;chat_page&#39;)" class="nav-hover focus-primary group" data-current-page="chat_page">
+                            <span class="iconify" data-icon="heroicons:chat-bubble-left-ellipsis" data-width="20"></span>
+                            <span class="sidebar-text font-medium">当前聊天</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- 历史会话分组 -->
+                <div class="px-4">
+                    <div class="divider text-xs text-base-content/50">
+                        <span class="sidebar-text">历史会话</span>
+                    </div>
+                </div>
+
+                <div id="chat-history-list" class="px-4 pb-4">
+                    <!-- 动态加载的历史会话列表 -->
+                    <div class="text-center py-8">
+                        <span class="iconify text-base-content/30" data-icon="heroicons:chat-bubble-oval-left" data-width="32"></span>
+                        <p class="text-xs text-base-content/50 mt-2 sidebar-text">暂无历史会话</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar footer -->
+            <div class="p-4 border-t border-base-300">
+                <button onclick="navigateTo(&#39;user_settings_page&#39;)" class="btn btn-ghost w-full nav-hover focus-primary justify-start">
+                    <span class="iconify" data-icon="heroicons:cog-6-tooth" data-width="16"></span>
+                    <span class="sidebar-text text-sm">设置</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <style>
+    [data-section-id="common_sidebar"] {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        z-index: 40;
+    }
+
+    [data-section-id="common_sidebar"].sidebar-collapsed {
+        width: 80px;
+    }
+
+    [data-section-id="common_sidebar"].sidebar-collapsed .sidebar-text {
+        display: none;
+    }
+
+    [data-section-id="common_sidebar"].sidebar-expanded {
+        width: 280px;
+    }
+
+    [data-section-id="common_sidebar"] .menu li > *:where(.active) {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+        color: var(--color-primary-content);
+        box-shadow: var(--shadow-soft);
+    }
+
+    [data-section-id="common_sidebar"] .nav-hover:hover {
+        background-color: var(--color-base-200);
+        transform: translateX(2px);
+    }
+
+    [data-section-id="common_sidebar"] .chat-history-item {
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-box);
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+
+    [data-section-id="common_sidebar"] .chat-history-item:hover {
+        background-color: var(--color-base-200);
+        border-color: var(--color-primary);
+        transform: translateX(2px);
+    }
+
+    [data-section-id="common_sidebar"] .chat-history-item.active {
+        background: var(--color-primary);
+        color: var(--color-primary-content);
+    }
+    </style>
+    <script>
+    (function() {
+        // Set active navigation item based on current page
+        window.setActiveSidebarItem = function(pageId) {
+            const sidebar = document.querySelector(&#39;[data-section-id="common_sidebar"]&#39;);
+            if (!sidebar) return;
+
+            // Remove active class from all items
+            const allItems = sidebar.querySelectorAll(&#39;.menu a&#39;);
+            allItems.forEach(item => item.classList.remove(&#39;active&#39;));
+
+            // Add active class to current page
+            const currentItem = sidebar.querySelector(`[data-current-page="${pageId}"]`);
+            if (currentItem) {
+                currentItem.classList.add(&#39;active&#39;);
+            }
+        };
+
+        // Load and display chat history
+        window.loadChatHistorySidebar = function() {
+            const historyList = document.getElementById(&#39;chat-history-list&#39;);
+            if (!historyList) return;
+
+            const chatSessions = getChatSessions();
+            
+            if (chatSessions.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="iconify text-base-content/30" data-icon="heroicons:chat-bubble-oval-left" data-width="32"></span>
+                        <p class="text-xs text-base-content/50 mt-2 sidebar-text">暂无历史会话</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = chatSessions.slice(0, 10).map(session => `
+                <div class="chat-history-item mb-1" onclick="loadChatSession(&#39;${session.id}&#39;)">
+                    <div class="flex items-center gap-2">
+                        <div class="avatar placeholder inline-flex items-center justify-center w-6 h-6 rounded-full bg-accent text-accent-content">
+                            <span class="text-xs">${session.characterName.charAt(0)}</span>
+                        </div>
+                        <div class="sidebar-text flex-1 min-w-0">
+                            <p class="font-medium text-sm truncate">${session.characterName}</p>
+                            <p class="text-xs text-base-content/60 truncate">${session.lastMessage}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-base-content/40 mt-1 sidebar-text">${formatRelativeTime(session.lastActivity)}</p>
+                </div>
+            `).join(&#39;&#39;);
+        };
+
+        // Mock function to get chat sessions (replace with actual implementation)
+        function getChatSessions() {
+            // This would typically fetch from localStorage or API
+            return [
+                {
+                    id: &#39;session_1&#39;,
+                    characterName: &#39;哈利波特&#39;,
+                    lastMessage: &#39;很高兴认识你！&#39;,
+                    lastActivity: Date.now() - 3600000 // 1 hour ago
+                },
+                {
+                    id: &#39;session_2&#39;,
+                    characterName: &#39;苏格拉底&#39;,
+                    lastMessage: &#39;我们来探讨一个哲学问题吧&#39;,
+                    lastActivity: Date.now() - 7200000 // 2 hours ago
+                }
+            ];
+        }
+
+        function formatRelativeTime(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (days > 0) return `${days}天前`;
+            if (hours > 0) return `${hours}小时前`;
+            return &#39;刚刚&#39;;
+        }
+
+        window.loadChatSession = function(sessionId) {
+            // Load specific chat session and navigate to chat page
+            navigateTo(&#39;chat_page&#39;);
+        };
+
+        // Initialize sidebar on page load
+        document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+            setTimeout(loadChatHistorySidebar, 100); // Small delay to ensure DOM is ready
+        });
+    })();
+    </script><!--主内容区域-->
+      <main class="flex-1 p-4 md:p-8">
+        <section id="UserSettingsLayout">
+          <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Left Side Navigation -->
+            <aside class="w-full lg:w-64 shrink-0">
+              <div class="p-4 bg-base-100 rounded-box shadow-card">
+                <h2 class="text-lg font-bold mb-4 px-4">设置</h2>
+                <ul id="settings-menu" class="menu">
+                  <li>
+                    <a data-target="profile-settings" class="active"><span class="iconify" data-icon="heroicons:user-circle" data-width="20"></span>
+                      个人资料
+                    </a>
+                  </li>
+                  <li>
+                    <a data-target="security-settings"><span class="iconify" data-icon="heroicons:shield-check" data-width="20"></span>
+                      安全
+                    </a>
+                  </li>
+                  <li>
+                    <a data-target="notification-settings"><span class="iconify" data-icon="heroicons:bell" data-width="20"></span>
+                      通知
+                    </a>
+                  </li>
+                  <li>
+                    <a data-target="privacy-settings"><span class="iconify" data-icon="heroicons:lock-closed" data-width="20"></span>
+                      隐私
+                    </a>
+                  </li>
+                  <li>
+                    <a data-target="account-settings"><span class="iconify" data-icon="heroicons:cog-6-tooth" data-width="20"></span>
+                      账户管理
+                    </a>
+                  </li>
+                  <li>
+                    <a data-target="activity-log-settings"><span class="iconify" data-icon="heroicons:clipboard-document-list" data-width="20"></span>
+                      活动日志
+                    </a>
+                  </li>
+                  <div class="divider my-2"></div>
+                  <li>
+                    <a data-target="about-settings"><span class="iconify" data-icon="heroicons:information-circle" data-width="20"></span>
+                      关于
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </aside>
+            <!-- Right Side Content -->
+            <div id="settings-content" class="flex-1 flex flex-col gap-8">
+              <!-- Profile Settings Card -->
+              <div id="profile-settings" class="settings-panel card bg-base-100 shadow-card transition-opacity duration-300">
+                <div class="card-body">
+                  <h3 class="card-title text-xl font-bold">个人资料</h3>
+                  <p class="text-base-content/70">
+                    管理您的个人信息，让您的个人资料更完整。
+                  </p>
+                  <div class="divider"></div>
+                  <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="avatar">
+                      <div class="w-24 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                        <img id="avatar-preview" alt="User Avatar" data-src="placehold.co/128x128.png?text=User">
+                      </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                      <button class="btn btn-sm btn-primary" onclick="document.getElementById(&#39;avatar-upload&#39;).click()">
+                        上传新头像</button><input type="file" id="avatar-upload" accept="image/*" class="hidden">
+                      <p class="text-xs text-base-content/50">
+                        支持 JPG, PNG, GIF, 不超过 2MB。
+                      </p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                    <div class="form-control">
+                      <label class="label"><span class="label-text">用户名</span></label><input type="text" value="当前用户名" class="input input-bordered w-full">
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text">电子邮箱</span></label><input type="email" value="user@example.com" disabled="" class="input input-bordered w-full">
+                    </div>
+                    <div class="form-control md:col-span-2" id="ixop71">
+                      <label class="label"><span class="label-text">个人简介</span></label><textarea placeholder="介绍一下自己吧..." class="textarea textarea-bordered h-24 ik7s2k spark-custom-ik7s2k" id="ik7s2k">一个热爱AI和创造的探索者。</textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Security Settings Card -->
+              <div id="security-settings" class="settings-panel card bg-base-100 shadow-card transition-opacity duration-300 hidden">
+                <div class="card-body">
+                  <h3 class="card-title text-xl font-bold">安全设置</h3>
+                  <p class="text-base-content/70">
+                    定期更改密码以保护您的账户安全。
+                  </p>
+                  <div class="divider"></div>
+                  <div class="space-y-4">
+                    <div class="form-control">
+                      <label class="label"><span class="label-text">当前密码</span></label><input type="password" placeholder="请输入当前密码" class="input input-bordered w-full max-w-md">
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text">新密码</span></label><input type="password" placeholder="请输入新密码" class="input input-bordered w-full max-w-md">
+                    </div>
+                    <div class="form-control">
+                      <label class="label"><span class="label-text">确认新密码</span></label><input type="password" placeholder="请再次输入新密码" class="input input-bordered w-full max-w-md">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Notification Settings Card -->
+              <div id="notification-settings" class="settings-panel card bg-base-100 shadow-card transition-opacity duration-300 hidden">
+                <div class="card-body">
+                  <h3 class="card-title text-xl font-bold">通知设置</h3>
+                  <p class="text-base-content/70">
+                    选择您希望接收的通知类型和渠道。
+                  </p>
+                  <div class="divider"></div>
+                  <div class="space-y-4">
+                    <div class="form-control p-4 rounded-lg border border-base-300">
+                      <label class="cursor-pointer label justify-start gap-4"><input type="checkbox" checked="" class="toggle toggle-primary"><span class="label-text text-base font-medium">邮件通知</span></label>
+                      <p class="text-sm text-base-content/60 ml-12">
+                        接收重要活动和摘要的邮件。
+                      </p>
+                    </div>
+                    <div class="form-control p-4 rounded-lg border border-base-300">
+                      <label class="cursor-pointer label justify-start gap-4"><input type="checkbox" checked="" class="toggle toggle-primary"><span class="label-text text-base font-medium">应用内通知</span></label>
+                      <p class="text-sm text-base-content/60 ml-12">
+                        在应用内接收实时消息和提醒。
+                      </p>
+                    </div>
+                    <div class="form-control p-4 rounded-lg border border-base-300">
+                      <label class="cursor-pointer label justify-start gap-4"><input type="checkbox" class="toggle toggle-primary"><span class="label-text text-base font-medium">产品更新</span></label>
+                      <p class="text-sm text-base-content/60 ml-12">
+                        获取关于新功能和改进的通知。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Other Panels (hidden by default) -->
+              <div id="privacy-settings" class="settings-panel card bg-base-100 shadow-card transition-opacity duration-300 hidden">
+                <div class="card-body">
+                  <h3 class="card-title">隐私</h3>
+                  <p>此部分内容待添加。</p>
+                </div>
+              </div>
+              <div id="account-settings" class="settings-panel card bg-base-100 shadow-card transition-opacity duration-300 hidden">
+                <div class="card-body">
+                  <h3 class="card-title">账户管理</h3>
+                  <p>此部分内容待添加。</p>
+                </div>
+              </div>
+              <div id="activity-log-settings" class="settings-panel card bg-base-100 shadow-card transition-opacity duration-300 hidden">
+                <div class="card-body">
+                  <h3 class="card-title">活动日志</h3>
+                  <p>此部分内容待添加。</p>
+                </div>
+              </div>
+              <div id="about-settings" class="settings-panel card bg-base-100 shadow-card transition-opacity duration-300 hidden">
+                <div class="card-body">
+                  <h3 class="card-title">关于</h3>
+                  <p>版本号: 1.0.0</p>
+                </div>
+              </div>
+              <!-- Action Buttons -->
+              <div class="flex justify-end gap-4 mt-auto pt-4">
+                <button class="btn btn-ghost" onclick="navigateTo(&#39;home_page&#39;)">
+                  取消</button><button class="btn btn-primary" onclick="navigateTo(&#39;home_page&#39;)">
+                  <span class="iconify" data-icon="heroicons:check" data-width="20"></span>
+                  保存设置
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <!--页脚--><div data-section-id="common_footer" data-section-type="common_footer">
+        <footer class="footer footer-center p-6 bg-base-200 text-base-content border-t border-base-300">
+            <div class="grid grid-flow-col gap-6">
+                <a onclick="navigateTo(&#39;home_page&#39;)" class="link link-hover focus-primary">关于我们</a>
+                <a class="link link-hover focus-primary">帮助中心</a>
+                <a class="link link-hover focus-primary">用户协议</a>
+                <a class="link link-hover focus-primary">隐私政策</a>
+                <a onclick="navigateTo(&#39;user_settings_page&#39;)" class="link link-hover focus-primary">联系我们</a>
+            </div>
+            
+            <div class="grid grid-flow-col gap-4">
+                <a class="link link-hover focus-primary" aria-label="官方微信">
+                    <span class="iconify" data-icon="simple-icons:wechat" data-width="20" style="color: var(--color-accent);"></span>
+                </a>
+                <a class="link link-hover focus-primary" aria-label="官方微博">
+                    <span class="iconify" data-icon="simple-icons:weibo" data-width="20" style="color: var(--color-secondary);"></span>
+                </a>
+                <a class="link link-hover focus-primary" aria-label="技术支持">
+                    <span class="iconify" data-icon="heroicons:envelope" data-width="20" style="color: var(--color-primary);"></span>
+                </a>
+            </div>
+            
+            <div class="text-center">
+                <p>© 2025 AI人物聊天平台. 所有权利保留 | <span class="text-primary font-medium">智能对话，创造无限可能</span></p>
+                <p class="text-xs opacity-70 mt-1">技术支持: support@ai-chat.com | 服务热线: 400-123-4567</p>
+            </div>
+        </footer>
+    </div><script>
+    (function() {
+        &#39;use strict&#39;;
+
+        // Initialize global app state
+        window.APP_GLOBALS = window.APP_GLOBALS || {
+            currentUser: null,
+            currentCharacter: null,
+            chatHistory: [],
+            sidebarState: &#39;expanded&#39;
+        };
+
+        // Global navigation utility
+        window.navigateTo = function(targetPageId) {
+            const isInIframe = window.self !== window.top;
+            const targetFileName = `${targetPageId}.html`;
+            
+            if (isInIframe) {
+                window.parent.postMessage({
+                    type: &#39;iframeNavigation&#39;,
+                    targetPageId: targetPageId
+                }, &#39;*&#39;);
+            } else {
+                window.location.href = targetFileName;
+            }
+        };
+
+        // Sidebar collapse/expand utility
+        window.toggleSidebar = function() {
+            const sidebar = document.querySelector(&#39;[data-section-id="common_sidebar"]&#39;);
+            if (!sidebar) return;
+            
+            const isCollapsed = sidebar.classList.contains(&#39;sidebar-collapsed&#39;);
+            
+            if (isCollapsed) {
+                sidebar.classList.remove(&#39;sidebar-collapsed&#39;);
+                sidebar.classList.add(&#39;sidebar-expanded&#39;);
+                window.APP_GLOBALS.sidebarState = &#39;expanded&#39;;
+            } else {
+                sidebar.classList.remove(&#39;sidebar-expanded&#39;);
+                sidebar.classList.add(&#39;sidebar-collapsed&#39;);
+                window.APP_GLOBALS.sidebarState = &#39;collapsed&#39;;
+            }
+            
+            localStorage.setItem(&#39;sidebarState&#39;, window.APP_GLOBALS.sidebarState);
+        };
+
+        // Initialize sidebar state
+        window.initSidebarState = function() {
+            const savedState = localStorage.getItem(&#39;sidebarState&#39;) || &#39;expanded&#39;;
+            window.APP_GLOBALS.sidebarState = savedState;
+            
+            const sidebar = document.querySelector(&#39;[data-section-id="common_sidebar"]&#39;);
+            if (sidebar) {
+                sidebar.classList.add(savedState === &#39;collapsed&#39; ? &#39;sidebar-collapsed&#39; : &#39;sidebar-expanded&#39;);
+            }
+        };
+
+        // Notification utilities
+        window.showNotification = function(message, type = &#39;info&#39;) {
+            const notification = document.createElement(&#39;div&#39;);
+            notification.className = `alert alert-${type} fixed top-4 right-4 w-96 z-50 shadow-lg`;
+            notification.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="iconify" data-icon="heroicons:information-circle-solid" data-width="20"></span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        };
+
+        // Character management utilities
+        window.setCurrentCharacter = function(characterData) {
+            window.APP_GLOBALS.currentCharacter = characterData;
+            localStorage.setItem(&#39;currentCharacter&#39;, JSON.stringify(characterData));
+        };
+
+        window.getCurrentCharacter = function() {
+            if (window.APP_GLOBALS.currentCharacter) {
+                return window.APP_GLOBALS.currentCharacter;
+            }
+            
+            const stored = localStorage.getItem(&#39;currentCharacter&#39;);
+            if (stored) {
+                window.APP_GLOBALS.currentCharacter = JSON.parse(stored);
+                return window.APP_GLOBALS.currentCharacter;
+            }
+            
+            return null;
+        };
+
+        // Chat history management
+        window.addChatMessage = function(message) {
+            window.APP_GLOBALS.chatHistory.push({
+                ...message,
+                timestamp: Date.now()
+            });
+            
+            // Keep only last 100 messages
+            if (window.APP_GLOBALS.chatHistory.length > 100) {
+                window.APP_GLOBALS.chatHistory = window.APP_GLOBALS.chatHistory.slice(-100);
+            }
+            
+            localStorage.setItem(&#39;chatHistory&#39;, JSON.stringify(window.APP_GLOBALS.chatHistory));
+        };
+
+        window.getChatHistory = function() {
+            if (window.APP_GLOBALS.chatHistory.length > 0) {
+                return window.APP_GLOBALS.chatHistory;
+            }
+            
+            const stored = localStorage.getItem(&#39;chatHistory&#39;);
+            if (stored) {
+                window.APP_GLOBALS.chatHistory = JSON.parse(stored);
+            }
+            
+            return window.APP_GLOBALS.chatHistory;
+        };
+
+        window.clearChatHistory = function() {
+            window.APP_GLOBALS.chatHistory = [];
+            localStorage.removeItem(&#39;chatHistory&#39;);
+        };
+
+        // Initialize components when DOM is loaded
+        document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+            initSidebarState();
+        });
+
+    })();
+    </script><script>
+document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+    &#39;use strict&#39;;
+
+    const menu = document.getElementById(&#39;settings-menu&#39;);
+    const contentContainer = document.getElementById(&#39;settings-content&#39;);
+
+    if (menu &amp;&amp; contentContainer) {
+        const menuLinks = menu.querySelectorAll(&#39;a[data-target]&#39;);
+        const contentPanels = contentContainer.querySelectorAll(&#39;.settings-panel&#39;);
+
+        // Function to switch tabs
+        function switchTab(targetId) {
+            // Update menu active state
+            menuLinks.forEach(link => {
+                if (link.dataset.target === targetId) {
+                    link.classList.add(&#39;active&#39;);
+                } else {
+                    link.classList.remove(&#39;active&#39;);
+                }
+            });
+
+            // Update panel visibility
+            contentPanels.forEach(panel => {
+                if (panel.id === targetId) {
+                    panel.classList.remove(&#39;hidden&#39;);
+                } else {
+                    panel.classList.add(&#39;hidden&#39;);
+                }
+            });
+        }
+
+        // Add click event listeners to menu links
+        menu.addEventListener(&#39;click&#39;, function(event) {
+            const link = event.target.closest(&#39;a[data-target]&#39;);
+            if (link) {
+                event.preventDefault();
+                const targetId = link.dataset.target;
+                switchTab(targetId);
+            }
+        });
+
+        // Initialize to show the first tab
+        const initialTarget = menu.querySelector(&#39;a.active&#39;)?.dataset.target || &#39;profile-settings&#39;;
+        switchTab(initialTarget);
+    }
+
+    // Avatar preview functionality
+    const avatarUpload = document.getElementById(&#39;avatar-upload&#39;);
+    const avatarPreview = document.getElementById(&#39;avatar-preview&#39;);
+
+    if (avatarUpload &amp;&amp; avatarPreview) {
+        avatarUpload.addEventListener(&#39;change&#39;, function(event) {
+            const file = event.target.files[0];
+            if (file &amp;&amp; file.type.startsWith(&#39;image/&#39;)) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    avatarPreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+</script>
+  
+
+<script>
+    setTimeout(() => {
+      Holder.run({
+        domain: "placehold.co"
+      })
+    }, 100)
+  </script></body></html>'></iframe>
+                    </div>
+                  </div>
+
+                </body>
+                </html>
+            

@@ -1,0 +1,1774 @@
+
+                <!DOCTYPE html>
+                <html lang="zh">
+                <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>创建人物</title>
+                  <style>
+                    *,
+                    *::before,
+                    *::after {
+                      box-sizing: border-box;
+                      margin: 0;
+                    }
+                    .iframe-outer {
+                      position: fixed;
+                      top: 0;
+                      left: 0;
+                      bottom: 0;
+                      right: 0;
+                      display: flex;
+                      justify-content: center;
+                      background-color: #E0E0E0;
+                    }
+                    .iframe-wrapper {
+                      width: 100%;
+                      height: 100%;
+                      margin: 0 auto;
+                      transform-origin: center top;
+                      flex-shrink: 0;
+                    }
+                    #dynamicIframe {
+                      border: none;
+                      width: 100%;
+                      height: 100%;
+                    }
+                  </style>
+                  <script>
+                const width = 1920
+                const height = 1080
+                const resolutionRatio = width && height ? width / height : 1
+                const pageNameMap = {
+                  'home_page': '主页',
+    'create_character_page': '创建人物',
+    'chat_page': '聊天',
+    'user_settings_page': '用户设置'
+                }
+                function setIframeSize(w, h) {
+                  const currentContainerRadio = w / h
+                  let widthValue = w
+                  let heightValue = h
+                  let zoom = 1
+                  if (currentContainerRadio > resolutionRatio) {
+                    widthValue = h * resolutionRatio
+                    heightValue = h
+                  } else {
+                    widthValue = w
+                    heightValue = w / resolutionRatio
+                  }
+                  zoom = width ? widthValue / width : 1
+                  return {
+                    width: widthValue / zoom + 'px',
+                    height: heightValue / zoom + 'px',
+                    zoom,
+                  }
+                }
+                function adjustIframeSize() {
+                  const iframeWrapper = document.querySelector(".iframe-wrapper")
+                  const { width, height, zoom } = setIframeSize(window.innerWidth, window.innerHeight)
+                  iframeWrapper.style.height = height
+                  iframeWrapper.style.width = width
+                  iframeWrapper.style.transform = 'scale(' + zoom + ')'
+                }
+                function sanitizeFilename(name) {
+                  return name.replace(/[\/:*?"<>|]/g, '_')
+                }
+                function handlePostMessage(event) {
+                  if (!event.data) {
+                    return
+                  }
+                  const { type, targetPageId } = event.data
+                  const targetPageName = pageNameMap[targetPageId]
+                  if (type === "iframeNavigation" && targetPageId && targetPageName) {
+                    window.location.href = targetPageName + '.html'
+                  }
+                }
+                window.addEventListener('message', handlePostMessage)
+                window.onload = adjustIframeSize
+                window.onresize = adjustIframeSize
+                window.onunload = () => {
+                  window.removeEventListener('message', handlePostMessage)
+                }
+              </script>
+                </head>
+                <body>
+                  <div class="iframe-outer">
+                    <div class="iframe-wrapper">
+                      <iframe id="dynamicIframe" srcdoc='<html lang="zh-CN" data-theme="light"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建人物 - AI聊天平台</title>
+    <link href="./assets/static/uxbot/daisyui@5.css" rel="stylesheet" type="text/css">
+    <script src="./assets/static/uxbot/tailwind-browser@4.js"></script>
+    <link href="./assets/static/uxbot/daisyui-themes.css" rel="stylesheet" type="text/css">
+    <script src="./assets/3/3.1.1/iconify.min.js"></script>
+    <style>
+    /* daisyUI Theme Variables Customization */
+    :root {
+        /* AI Chat Platform Theme - Vibrant and Modern */
+        --color-primary: rgba(99, 102, 241, 1); /* Indigo #6366F1 */
+        --color-primary-content: rgba(255, 255, 255, 1);
+        --color-secondary: rgba(236, 72, 153, 1); /* Pink #EC4899 */
+        --color-secondary-content: rgba(255, 255, 255, 1);
+        --color-accent: rgba(34, 197, 94, 1); /* Green #22C55E */
+        --color-accent-content: rgba(255, 255, 255, 1);
+        --color-base-100: rgba(255, 255, 255, 1);
+        --color-base-200: rgba(248, 250, 252, 1); /* #F8FAFC */
+        --color-base-300: rgba(226, 232, 240, 1); /* #E2E8F0 */
+        --color-base-content: rgba(30, 41, 59, 1); /* #1E293B */
+        --color-success: rgba(34, 197, 94, 1);
+        --color-warning: rgba(251, 191, 36, 1);
+        --color-error: rgba(239, 68, 68, 1);
+        --color-info: rgba(59, 130, 246, 1);
+        --radius-box: 0.5rem; /* 8px for modern rounded feel */
+        --radius-field: 0.5rem;
+        --border: 1px;
+    }
+
+    /* Global component styles */
+    .transition-width {
+        transition: width 0.3s ease-in-out;
+    }
+
+    .nav-hover {
+        transition: all 0.15s ease-in-out;
+    }
+
+    .shadow-soft {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .shadow-card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Header height consistency */
+    .header-height {
+        height: 64px;
+    }
+
+    /* Sidebar dimensions */
+    .sidebar-expanded {
+        width: 280px;
+    }
+
+    .sidebar-collapsed {
+        width: 80px;
+    }
+
+    /* Focus styles for accessibility */
+    .focus-primary:focus {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
+
+    /* Pure color block styles for flat design */
+    .color-block-primary {
+        background: var(--color-primary);
+        color: var(--color-primary-content);
+    }
+
+    .color-block-secondary {
+        background: var(--color-secondary);
+        color: var(--color-secondary-content);
+    }
+
+    .color-block-accent {
+        background: var(--color-accent);
+        color: var(--color-accent-content);
+    }
+
+    /* Character avatar styles */
+    .character-avatar {
+        border-radius: var(--radius-box);
+        border: 2px solid var(--color-primary);
+    }
+
+    /* Chat bubble enhancements */
+    .chat-bubble-custom {
+        border-radius: var(--radius-box);
+        box-shadow: var(--shadow-soft);
+    }
+    </style>
+    <style>
+/* Character Creation Page Specific Styles */
+
+/* Avatar upload area hover effects */
+.avatar-upload-area:hover {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: var(--color-primary);
+}
+
+/* Radar chart container */
+.radar-chart-container {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    margin: 0 auto;
+}
+
+/* Custom range slider styling */
+.range::-webkit-slider-thumb {
+    transition: all 0.2s ease-in-out;
+}
+
+.range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+/* Example pair styling */
+.example-pair {
+    padding: 16px;
+    border: 1px solid var(--color-base-300);
+    border-radius: var(--radius-box);
+    background: var(--color-base-200);
+    position: relative;
+}
+
+.example-pair:hover {
+    background: rgba(99, 102, 241, 0.02);
+    border-color: var(--color-primary);
+}
+
+/* Button hover animations */
+.btn:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Card hover effects */
+.card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease-in-out;
+}
+
+/* Collapse title hover effects */
+.collapse-title:hover {
+    background: rgba(99, 102, 241, 0.05);
+    transition: background 0.2s ease-in-out;
+}
+
+/* Form validation styles */
+.input.error, .textarea.error, .select.error {
+    border-color: var(--color-error) !important;
+    box-shadow: 0 0 0 1px var(--color-error) !important;
+}
+
+.input.success, .textarea.success, .select.success {
+    border-color: var(--color-success) !important;
+    box-shadow: 0 0 0 1px var(--color-success) !important;
+}
+
+/* Loading state for buttons */
+.btn.loading {
+    pointer-events: none;
+}
+
+.btn.loading::before {
+    content: &#39;&#39;;
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Sticky positioning for right column */
+@media (min-width: 1024px) {
+    .sticky {
+        position: sticky;
+        top: 32px;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .radar-chart-container {
+        width: 240px;
+        height: 240px;
+    }
+    
+    #personality-radar {
+        width: 240px !important;
+        height: 240px !important;
+    }
+}
+
+/* Avatar preview styling */
+.avatar-preview img {
+    width: 128px;
+    height: 128px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid var(--color-primary);
+}
+
+/* Test output area styling */
+#test-output {
+    min-height: 96px;
+    white-space: pre-wrap;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+/* Micro-gradient for primary buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, rgba(99, 102, 241, 0.9) 100%);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(236, 72, 153, 0.9) 100%);
+}
+
+/* Subtle texture for cards */
+.card {
+    background-image: 
+        radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.03) 1px, transparent 0);
+    background-size: 20px 20px;
+}
+
+/* Focus states for accessibility */
+.input:focus, .textarea:focus, .select:focus, .range:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+</style>
+<script src="./assets/static/uxbot/25_6/holder.js"></script></head>
+<body class="bg-base-100">
+    <!-- Header -->
+    <div class="header-wrapper">
+        <div data-section-id="common_header" data-section-type="common_header">
+        <div class="navbar bg-base-100 shadow-soft border-b border-base-300 header-height px-4">
+            <!-- Left section: Menu toggle and Logo -->
+            <div class="navbar-start">
+                <button class="btn btn-ghost btn-circle focus-primary" onclick="toggleSidebar()" aria-label="切换侧边栏">
+                    <span class="iconify" data-icon="heroicons:bars-3" data-width="24"></span>
+                </button>
+                <div class="flex items-center ml-2">
+                    <img alt="AI聊天平台 Logo" class="w-10 h-10 rounded-lg" data-src="placehold.co/40x40.png?text=AI">
+                    <span class="ml-3 text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hidden lg:block">AI人物聊天</span>
+                </div>
+            </div>
+
+            <!-- Center section: Current character info -->
+            <div class="navbar-center hidden xl:flex">
+                <div id="current-character-display" class="flex items-center gap-3 px-4 py-2 bg-base-200 rounded-full">
+                    <div class="avatar placeholder inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-content">
+                        <span class="iconify" data-icon="heroicons:user" data-width="16"></span>
+                    </div>
+                    <span class="text-sm font-medium text-base-content/70">选择一个人物开始对话</span>
+                </div>
+            </div>
+
+            <!-- Right section: User actions -->
+            <div class="navbar-end">
+                <!-- Theme toggle -->
+                <button class="btn btn-ghost btn-circle focus-primary mr-2" onclick="toggleTheme()" aria-label="切换主题">
+                    <span class="iconify" data-icon="heroicons:sun" data-width="20"></span>
+                </button>
+
+                <!-- Notifications -->
+                <div class="indicator mr-2">
+                    <span class="indicator-item badge badge-accent badge-sm">2</span>
+                    <button class="btn btn-ghost btn-circle focus-primary" aria-label="通知">
+                        <span class="iconify" data-icon="heroicons:bell" data-width="20"></span>
+                    </button>
+                </div>
+
+                <!-- User profile dropdown -->
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar focus-primary">
+                        <div class="avatar placeholder inline-flex items-center justify-center w-10 h-10 rounded-full bg-secondary text-secondary-content">
+                            <span class="font-semibold text-sm">U</span>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-50 p-2 shadow-card bg-base-100 rounded-box w-52">
+                        <li class="menu-title">
+                            <span>用户中心</span>
+                        </li>
+                        <li>
+                            <a onclick="navigateTo(&#39;user_settings_page&#39;)" class="nav-hover focus-primary">
+                                <span class="iconify" data-icon="heroicons:cog-6-tooth" data-width="16"></span>
+                                <span>用户设置</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a onclick="navigateTo(&#39;home_page&#39;)" class="nav-hover focus-primary">
+                                <span class="iconify" data-icon="heroicons:home" data-width="16"></span>
+                                <span>返回主页</span>
+                            </a>
+                        </li>
+                        <div class="divider my-1"></div>
+                        <li>
+                            <a onclick="navigateTo(&#39;login_page&#39;)" class="nav-hover focus-primary text-error">
+                                <span class="iconify" data-icon="heroicons:arrow-right-on-rectangle" data-width="16"></span>
+                                <span>退出登录</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function() {
+        // Update current character display in header
+        window.updateHeaderCharacterDisplay = function(characterName, characterAvatar) {
+            const display = document.getElementById(&#39;current-character-display&#39;);
+            if (!display) return;
+            
+            const avatarEl = display.querySelector(&#39;.avatar&#39;);
+            const textEl = display.querySelector(&#39;span:last-child&#39;);
+            
+            if (characterName &amp;&amp; characterAvatar) {
+                avatarEl.innerHTML = `<img src="${characterAvatar}" alt="${characterName}" class="w-8 h-8 rounded-full object-cover" />`;
+                textEl.textContent = `正在与 ${characterName} 对话`;
+            } else {
+                avatarEl.innerHTML = `<span class="iconify" data-icon="heroicons:user" data-width="16"></span>`;
+                textEl.textContent = &#39;选择一个人物开始对话&#39;;
+            }
+        };
+
+        // Theme toggle functionality
+        window.toggleTheme = function() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute(&#39;data-theme&#39;) || &#39;light&#39;;
+            const newTheme = currentTheme === &#39;light&#39; ? &#39;dark&#39; : &#39;light&#39;;
+            
+            html.setAttribute(&#39;data-theme&#39;, newTheme);
+            localStorage.setItem(&#39;theme&#39;, newTheme);
+            
+            // Update icon
+            const themeIcon = document.querySelector(&#39;[onclick="toggleTheme()"] .iconify&#39;);
+            if (themeIcon) {
+                themeIcon.setAttribute(&#39;data-icon&#39;, newTheme === &#39;light&#39; ? &#39;heroicons:moon&#39; : &#39;heroicons:sun&#39;);
+            }
+        };
+
+        // Initialize theme
+        document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+            const savedTheme = localStorage.getItem(&#39;theme&#39;) || &#39;light&#39;;
+            document.documentElement.setAttribute(&#39;data-theme&#39;, savedTheme);
+            
+            const themeIcon = document.querySelector(&#39;[onclick="toggleTheme()"] .iconify&#39;);
+            if (themeIcon) {
+                themeIcon.setAttribute(&#39;data-icon&#39;, savedTheme === &#39;light&#39; ? &#39;heroicons:sun&#39; : &#39;heroicons:moon&#39;);
+            }
+        });
+    })();
+    </script>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <div class="sidebar-wrapper">
+            <div data-section-id="common_sidebar" data-section-type="common_sidebar">
+        <div class="h-full bg-base-100 border-r border-base-300 transition-width flex flex-col">
+            <!-- Sidebar header -->
+            <div class="p-4 border-b border-base-300">
+                <div class="flex items-center gap-3">
+                    <div class="avatar placeholder inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-content">
+                        <span class="iconify" data-icon="heroicons:chat-bubble-left-right" data-width="20"></span>
+                    </div>
+                    <div class="sidebar-text">
+                        <h2 class="font-bold text-base">AI聊天</h2>
+                        <p class="text-xs text-base-content/60">智能人物对话平台</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main navigation -->
+            <div class="flex-1 overflow-y-auto">
+                <ul class="menu p-4 gap-2">
+                    <!-- 主页 -->
+                    <li>
+                        <a onclick="navigateTo(&#39;home_page&#39;)" class="nav-hover focus-primary group" data-current-page="home_page">
+                            <span class="iconify" data-icon="heroicons:home" data-width="20"></span>
+                            <span class="sidebar-text font-medium">主页</span>
+                        </a>
+                    </li>
+
+                    <!-- 创建人物 -->
+                    <li>
+                        <a onclick="navigateTo(&#39;create_character_page&#39;)" class="nav-hover focus-primary group" data-current-page="create_character_page">
+                            <span class="iconify" data-icon="heroicons:plus-circle" data-width="20"></span>
+                            <span class="sidebar-text font-medium">创建人物</span>
+                        </a>
+                    </li>
+
+                    <!-- 当前聊天 -->
+                    <li>
+                        <a onclick="navigateTo(&#39;chat_page&#39;)" class="nav-hover focus-primary group" data-current-page="chat_page">
+                            <span class="iconify" data-icon="heroicons:chat-bubble-left-ellipsis" data-width="20"></span>
+                            <span class="sidebar-text font-medium">当前聊天</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- 历史会话分组 -->
+                <div class="px-4">
+                    <div class="divider text-xs text-base-content/50">
+                        <span class="sidebar-text">历史会话</span>
+                    </div>
+                </div>
+
+                <div id="chat-history-list" class="px-4 pb-4">
+                    <!-- 动态加载的历史会话列表 -->
+                    <div class="text-center py-8">
+                        <span class="iconify text-base-content/30" data-icon="heroicons:chat-bubble-oval-left" data-width="32"></span>
+                        <p class="text-xs text-base-content/50 mt-2 sidebar-text">暂无历史会话</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar footer -->
+            <div class="p-4 border-t border-base-300">
+                <button onclick="navigateTo(&#39;user_settings_page&#39;)" class="btn btn-ghost w-full nav-hover focus-primary justify-start">
+                    <span class="iconify" data-icon="heroicons:cog-6-tooth" data-width="16"></span>
+                    <span class="sidebar-text text-sm">设置</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <style>
+    [data-section-id="common_sidebar"] {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        z-index: 40;
+    }
+
+    [data-section-id="common_sidebar"].sidebar-collapsed {
+        width: 80px;
+    }
+
+    [data-section-id="common_sidebar"].sidebar-collapsed .sidebar-text {
+        display: none;
+    }
+
+    [data-section-id="common_sidebar"].sidebar-expanded {
+        width: 280px;
+    }
+
+    [data-section-id="common_sidebar"] .menu li > *:where(.active) {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+        color: var(--color-primary-content);
+        box-shadow: var(--shadow-soft);
+    }
+
+    [data-section-id="common_sidebar"] .nav-hover:hover {
+        background-color: var(--color-base-200);
+        transform: translateX(2px);
+    }
+
+    [data-section-id="common_sidebar"] .chat-history-item {
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-box);
+        transition: all 0.15s ease-in-out;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+
+    [data-section-id="common_sidebar"] .chat-history-item:hover {
+        background-color: var(--color-base-200);
+        border-color: var(--color-primary);
+        transform: translateX(2px);
+    }
+
+    [data-section-id="common_sidebar"] .chat-history-item.active {
+        background: var(--color-primary);
+        color: var(--color-primary-content);
+    }
+    </style>
+    <script>
+    (function() {
+        // Set active navigation item based on current page
+        window.setActiveSidebarItem = function(pageId) {
+            const sidebar = document.querySelector(&#39;[data-section-id="common_sidebar"]&#39;);
+            if (!sidebar) return;
+
+            // Remove active class from all items
+            const allItems = sidebar.querySelectorAll(&#39;.menu a&#39;);
+            allItems.forEach(item => item.classList.remove(&#39;active&#39;));
+
+            // Add active class to current page
+            const currentItem = sidebar.querySelector(`[data-current-page="${pageId}"]`);
+            if (currentItem) {
+                currentItem.classList.add(&#39;active&#39;);
+            }
+        };
+
+        // Load and display chat history
+        window.loadChatHistorySidebar = function() {
+            const historyList = document.getElementById(&#39;chat-history-list&#39;);
+            if (!historyList) return;
+
+            const chatSessions = getChatSessions();
+            
+            if (chatSessions.length === 0) {
+                historyList.innerHTML = `
+                    <div class="text-center py-8">
+                        <span class="iconify text-base-content/30" data-icon="heroicons:chat-bubble-oval-left" data-width="32"></span>
+                        <p class="text-xs text-base-content/50 mt-2 sidebar-text">暂无历史会话</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = chatSessions.slice(0, 10).map(session => `
+                <div class="chat-history-item mb-1" onclick="loadChatSession(&#39;${session.id}&#39;)">
+                    <div class="flex items-center gap-2">
+                        <div class="avatar placeholder inline-flex items-center justify-center w-6 h-6 rounded-full bg-accent text-accent-content">
+                            <span class="text-xs">${session.characterName.charAt(0)}</span>
+                        </div>
+                        <div class="sidebar-text flex-1 min-w-0">
+                            <p class="font-medium text-sm truncate">${session.characterName}</p>
+                            <p class="text-xs text-base-content/60 truncate">${session.lastMessage}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-base-content/40 mt-1 sidebar-text">${formatRelativeTime(session.lastActivity)}</p>
+                </div>
+            `).join(&#39;&#39;);
+        };
+
+        // Mock function to get chat sessions (replace with actual implementation)
+        function getChatSessions() {
+            // This would typically fetch from localStorage or API
+            return [
+                {
+                    id: &#39;session_1&#39;,
+                    characterName: &#39;哈利波特&#39;,
+                    lastMessage: &#39;很高兴认识你！&#39;,
+                    lastActivity: Date.now() - 3600000 // 1 hour ago
+                },
+                {
+                    id: &#39;session_2&#39;,
+                    characterName: &#39;苏格拉底&#39;,
+                    lastMessage: &#39;我们来探讨一个哲学问题吧&#39;,
+                    lastActivity: Date.now() - 7200000 // 2 hours ago
+                }
+            ];
+        }
+
+        function formatRelativeTime(timestamp) {
+            const now = Date.now();
+            const diff = now - timestamp;
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            
+            if (days > 0) return `${days}天前`;
+            if (hours > 0) return `${hours}小时前`;
+            return &#39;刚刚&#39;;
+        }
+
+        window.loadChatSession = function(sessionId) {
+            // Load specific chat session and navigate to chat page
+            navigateTo(&#39;chat_page&#39;);
+        };
+
+        // Initialize sidebar on page load
+        document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+            setTimeout(loadChatHistorySidebar, 100); // Small delay to ensure DOM is ready
+        });
+    })();
+    </script>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <div class="flex-1 p-8 bg-base-100">
+                <div class="max-w-7xl mx-auto">
+                    <!-- Page Header -->
+                    <div class="mb-8">
+                        <div class="text-sm breadcrumbs mb-4">
+                            <ul>
+                                <li><a onclick="navigateTo(&#39;home_page&#39;)" class="link link-hover"><span class="iconify" data-icon="heroicons:home" data-width="16"></span> 主页</a></li>
+                                <li><span class="text-base-content/60">创建人物</span></li>
+                            </ul>
+                        </div>
+                        <h1 class="text-4xl font-bold text-base-content mb-2">创建AI人物</h1>
+                        <p class="text-base-content/70">自定义你的AI角色，设置性格特征和对话风格</p>
+                    </div>
+
+                    <!-- Main Content Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <!-- Left Column: Character Creation Form -->
+                        <div class="lg:col-span-2">
+                            <div id="character-creation-form" class="space-y-6">
+                                <!-- Basic Information Section -->
+                                <div class="card bg-base-100 shadow-card border border-base-300">
+                                    <div class="card-body">
+                                        <h2 class="card-title text-xl mb-4 flex items-center gap-2">
+                                            <span class="iconify text-primary" data-icon="heroicons:user" data-width="24"></span>
+                                            基础信息
+                                        </h2>
+                                        
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text font-medium">人物名称</span>
+                                                    <span class="label-text-alt text-error">*</span>
+                                                </label>
+                                                <input type="text" id="character-name" placeholder="输入人物名称" class="input input-bordered focus:input-primary" required="">
+                                                <label class="label">
+                                                    <span class="label-text-alt text-base-content/60">为你的AI角色起一个独特的名字</span>
+                                                </label>
+                                            </div>
+
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text font-medium">预设性格</span>
+                                                </label>
+                                                <select id="personality-preset" class="select select-bordered focus:select-primary">
+                                                    <option value="">选择预设性格</option>
+                                                    <option value="friendly">友善亲切</option>
+                                                    <option value="professional">专业严谨</option>
+                                                    <option value="humorous">幽默风趣</option>
+                                                    <option value="wise">睿智深沉</option>
+                                                    <option value="energetic">活泼开朗</option>
+                                                    <option value="mysterious">神秘莫测</option>
+                                                </select>
+                                                <label class="label">
+                                                    <span class="label-text-alt text-base-content/60">选择一个基础性格模板</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-control mt-4">
+                                            <label class="label">
+                                                <span class="label-text font-medium">人物描述</span>
+                                                <span class="label-text-alt text-error">*</span>
+                                            </label>
+                                            <textarea id="character-description" class="textarea textarea-bordered focus:textarea-primary h-24" placeholder="描述你的AI角色的背景、特点和个性..." required=""></textarea>
+                                            <label class="label">
+                                                <span class="label-text-alt text-base-content/60">详细描述有助于AI更好地理解角色定位</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Advanced Settings Accordion -->
+                                <div class="space-y-2">
+                                    <!-- Custom Instructions -->
+                                    <div class="collapse collapse-arrow bg-base-100 border border-base-300 shadow-card">
+                                        <input type="checkbox" name="advanced-accordion">
+                                        <div class="collapse-title font-medium flex items-center gap-2">
+                                            <span class="iconify text-secondary" data-icon="heroicons:cog-6-tooth" data-width="20"></span>
+                                            自定义指令
+                                        </div>
+                                        <div class="collapse-content">
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text">系统指令</span>
+                                                </label>
+                                                <textarea id="custom-instructions" class="textarea textarea-bordered focus:textarea-primary h-32" placeholder="输入自定义的系统指令，用于精确控制AI的行为模式..."></textarea>
+                                                <label class="label">
+                                                    <span class="label-text-alt text-base-content/60">高级用户可以通过自定义指令实现更精确的角色控制</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Input/Output Examples -->
+                                    <div class="collapse collapse-arrow bg-base-100 border border-base-300 shadow-card">
+                                        <input type="checkbox" name="advanced-accordion">
+                                        <div class="collapse-title font-medium flex items-center gap-2">
+                                            <span class="iconify text-accent" data-icon="heroicons:chat-bubble-left-right" data-width="20"></span>
+                                            输入输出样例
+                                        </div>
+                                        <div class="collapse-content">
+                                            <div class="space-y-4" id="example-pairs">
+                                                <div class="example-pair" data-repeatable="true">
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div class="form-control">
+                                                            <label class="label">
+                                                                <span class="label-text">用户输入示例</span>
+                                                            </label>
+                                                            <textarea class="textarea textarea-bordered focus:textarea-primary h-20 input-example" placeholder="用户可能会说的话..."></textarea>
+                                                        </div>
+                                                        <div class="form-control">
+                                                            <label class="label">
+                                                                <span class="label-text">AI回复示例</span>
+                                                            </label>
+                                                            <textarea class="textarea textarea-bordered focus:textarea-primary h-20 output-example" placeholder="AI应该如何回复..."></textarea>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-2 mt-4">
+                                                <button type="button" class="btn btn-outline btn-sm" onclick="addExamplePair()">
+                                                    <span class="iconify" data-icon="heroicons:plus" data-width="16"></span>
+                                                    添加样例
+                                                </button>
+                                                <button type="button" class="btn btn-secondary btn-sm" onclick="generateExamples()">
+                                                    <span class="iconify" data-icon="heroicons:sparkles" data-width="16"></span>
+                                                    AI辅助生成
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Story Background -->
+                                    <div class="collapse collapse-arrow bg-base-100 border border-base-300 shadow-card">
+                                        <input type="checkbox" name="advanced-accordion">
+                                        <div class="collapse-title font-medium flex items-center gap-2">
+                                            <span class="iconify text-info" data-icon="heroicons:book-open" data-width="20"></span>
+                                            故事背景
+                                        </div>
+                                        <div class="collapse-content">
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text">背景故事</span>
+                                                </label>
+                                                <textarea id="story-background" class="textarea textarea-bordered focus:textarea-primary h-32" placeholder="描述角色的世界观、历史背景或特殊设定..."></textarea>
+                                                <label class="label">
+                                                    <span class="label-text-alt text-base-content/60">丰富的背景故事能让对话更加生动有趣</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Privacy Settings -->
+                                    <div class="collapse collapse-arrow bg-base-100 border border-base-300 shadow-card">
+                                        <input type="checkbox" name="advanced-accordion">
+                                        <div class="collapse-title font-medium flex items-center gap-2">
+                                            <span class="iconify text-warning" data-icon="heroicons:shield-check" data-width="20"></span>
+                                            隐私设置
+                                        </div>
+                                        <div class="collapse-content">
+                                            <div class="form-control">
+                                                <label class="label cursor-pointer justify-start gap-4">
+                                                    <input type="checkbox" id="is-public" class="toggle toggle-primary">
+                                                    <div>
+                                                        <span class="label-text font-medium">公开人物</span>
+                                                        <div class="label-text-alt text-base-content/60">允许其他用户发现和使用这个角色</div>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Character Image and Personality -->
+                        <div class="lg:col-span-1">
+                            <div class="space-y-6 sticky top-8">
+                                <!-- Character Image Upload -->
+                                <div class="card bg-base-100 shadow-card border border-base-300">
+                                    <div class="card-body">
+                                        <h3 class="card-title text-lg mb-4 flex items-center gap-2">
+                                            <span class="iconify text-primary" data-icon="heroicons:photo" data-width="20"></span>
+                                            人物头像
+                                        </h3>
+                                        
+                                        <div class="form-control">
+                                            <div class="avatar-upload-area border-2 border-dashed border-base-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer" onclick="document.getElementById(&#39;avatar-input&#39;).click()">
+                                                <div id="avatar-preview" class="avatar-preview">
+                                                    <div class="w-32 h-32 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                                                        <span class="iconify text-base-content/40" data-icon="heroicons:user" data-width="48"></span>
+                                                    </div>
+                                                    <p class="text-base-content/60 mb-2">点击上传头像</p>
+                                                    <p class="text-sm text-base-content/40">支持 JPG、PNG 格式，建议尺寸 512x512</p>
+                                                </div>
+                                            </div>
+                                            <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Personality Radar Chart -->
+                                <div class="card bg-base-100 shadow-card border border-base-300">
+                                    <div class="card-body">
+                                        <h3 class="card-title text-lg mb-4 flex items-center gap-2">
+                                            <span class="iconify text-secondary" data-icon="heroicons:chart-pie" data-width="20"></span>
+                                            性格特征
+                                        </h3>
+                                        
+                                        <!-- Radar Chart Container -->
+                                        <div class="radar-chart-container mb-6">
+                                            <canvas id="personality-radar" width="280" height="280" class="mx-auto"></canvas>
+                                        </div>
+
+                                        <!-- Personality Sliders -->
+                                        <div class="space-y-4">
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text">活泼度</span>
+                                                    <span class="label-text-alt" id="energy-value">50</span>
+                                                </label>
+                                                <input type="range" id="energy-slider" min="0" max="100" value="50" class="range range-primary range-sm" onchange="updatePersonality()">
+                                            </div>
+                                            
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text">友善度</span>
+                                                    <span class="label-text-alt" id="friendliness-value">50</span>
+                                                </label>
+                                                <input type="range" id="friendliness-slider" min="0" max="100" value="50" class="range range-secondary range-sm" onchange="updatePersonality()">
+                                            </div>
+                                            
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text">幽默感</span>
+                                                    <span class="label-text-alt" id="humor-value">50</span>
+                                                </label>
+                                                <input type="range" id="humor-slider" min="0" max="100" value="50" class="range range-accent range-sm" onchange="updatePersonality()">
+                                            </div>
+                                            
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text">专业性</span>
+                                                    <span class="label-text-alt" id="professionalism-value">50</span>
+                                                </label>
+                                                <input type="range" id="professionalism-slider" min="0" max="100" value="50" class="range range-info range-sm" onchange="updatePersonality()">
+                                            </div>
+                                            
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text">创造力</span>
+                                                    <span class="label-text-alt" id="creativity-value">50</span>
+                                                </label>
+                                                <input type="range" id="creativity-slider" min="0" max="100" value="50" class="range range-warning range-sm" onchange="updatePersonality()">
+                                            </div>
+                                            
+                                            <div class="form-control">
+                                                <label class="label">
+                                                    <span class="label-text">同理心</span>
+                                                    <span class="label-text-alt" id="empathy-value">50</span>
+                                                </label>
+                                                <input type="range" id="empathy-slider" min="0" max="100" value="50" class="range range-error range-sm" onchange="updatePersonality()">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Test Output -->
+                                <div class="card bg-base-100 shadow-card border border-base-300">
+                                    <div class="card-body">
+                                        <h3 class="card-title text-lg mb-4 flex items-center gap-2">
+                                            <span class="iconify text-accent" data-icon="heroicons:beaker" data-width="20"></span>
+                                            测试输出
+                                        </h3>
+                                        
+                                        <div class="form-control mb-4">
+                                            <label class="label">
+                                                <span class="label-text">测试问题</span>
+                                            </label>
+                                            <input type="text" id="test-input" placeholder="输入一个测试问题..." class="input input-bordered focus:input-primary">
+                                        </div>
+                                        
+                                        <button type="button" class="btn btn-primary btn-block mb-4" onclick="testCharacterOutput()">
+                                            <span class="iconify" data-icon="heroicons:play" data-width="16"></span>
+                                            测试输出
+                                        </button>
+                                        
+                                        <div class="form-control">
+                                            <label class="label">
+                                                <span class="label-text">AI回复预览</span>
+                                            </label>
+                                            <div id="test-output" class="textarea textarea-bordered min-h-24 bg-base-200 text-base-content/70 p-4">
+                                                在这里查看AI根据当前设置生成的回复...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-12 pt-8 border-t border-base-300">
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button type="button" class="btn btn-primary btn-lg shadow-soft" onclick="saveAndChat()">
+                                <span class="iconify" data-icon="heroicons:chat-bubble-left-right" data-width="20"></span>
+                                保存人物并聊天
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-lg shadow-soft" onclick="saveAndReturn()">
+                                <span class="iconify" data-icon="heroicons:check" data-width="20"></span>
+                                保存人物并返回主页
+                            </button>
+                            <button type="button" class="btn btn-outline btn-lg" onclick="cancelCreation()">
+                                <span class="iconify" data-icon="heroicons:x-mark" data-width="20"></span>
+                                取消
+                            </button>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-ghost btn-sm text-base-content/60" onclick="clearAllFields()">
+                                <span class="iconify" data-icon="heroicons:trash" data-width="16"></span>
+                                清除所有内容
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-wrapper">
+        <div data-section-id="common_footer" data-section-type="common_footer">
+        <footer class="footer footer-center p-6 bg-base-200 text-base-content border-t border-base-300">
+            <div class="grid grid-flow-col gap-6">
+                <a onclick="navigateTo(&#39;home_page&#39;)" class="link link-hover focus-primary">关于我们</a>
+                <a class="link link-hover focus-primary">帮助中心</a>
+                <a class="link link-hover focus-primary">用户协议</a>
+                <a class="link link-hover focus-primary">隐私政策</a>
+                <a onclick="navigateTo(&#39;user_settings_page&#39;)" class="link link-hover focus-primary">联系我们</a>
+            </div>
+            
+            <div class="grid grid-flow-col gap-4">
+                <a class="link link-hover focus-primary" aria-label="官方微信">
+                    <span class="iconify" data-icon="simple-icons:wechat" data-width="20" style="color: var(--color-accent);"></span>
+                </a>
+                <a class="link link-hover focus-primary" aria-label="官方微博">
+                    <span class="iconify" data-icon="simple-icons:weibo" data-width="20" style="color: var(--color-secondary);"></span>
+                </a>
+                <a class="link link-hover focus-primary" aria-label="技术支持">
+                    <span class="iconify" data-icon="heroicons:envelope" data-width="20" style="color: var(--color-primary);"></span>
+                </a>
+            </div>
+            
+            <div class="text-center">
+                <p>© 2025 AI人物聊天平台. 所有权利保留 | <span class="text-primary font-medium">智能对话，创造无限可能</span></p>
+                <p class="text-xs opacity-70 mt-1">技术支持: support@ai-chat.com | 服务热线: 400-123-4567</p>
+            </div>
+        </footer>
+    </div>
+    </div>
+
+    <script>
+    (function() {
+        &#39;use strict&#39;;
+
+        // Initialize global app state
+        window.APP_GLOBALS = window.APP_GLOBALS || {
+            currentUser: null,
+            currentCharacter: null,
+            chatHistory: [],
+            sidebarState: &#39;expanded&#39;
+        };
+
+        // Global navigation utility
+        window.navigateTo = function(targetPageId) {
+            const isInIframe = window.self !== window.top;
+            const targetFileName = `${targetPageId}.html`;
+            
+            if (isInIframe) {
+                window.parent.postMessage({
+                    type: &#39;iframeNavigation&#39;,
+                    targetPageId: targetPageId
+                }, &#39;*&#39;);
+            } else {
+                window.location.href = targetFileName;
+            }
+        };
+
+        // Sidebar collapse/expand utility
+        window.toggleSidebar = function() {
+            const sidebar = document.querySelector(&#39;[data-section-id="common_sidebar"]&#39;);
+            if (!sidebar) return;
+            
+            const isCollapsed = sidebar.classList.contains(&#39;sidebar-collapsed&#39;);
+            
+            if (isCollapsed) {
+                sidebar.classList.remove(&#39;sidebar-collapsed&#39;);
+                sidebar.classList.add(&#39;sidebar-expanded&#39;);
+                window.APP_GLOBALS.sidebarState = &#39;expanded&#39;;
+            } else {
+                sidebar.classList.remove(&#39;sidebar-expanded&#39;);
+                sidebar.classList.add(&#39;sidebar-collapsed&#39;);
+                window.APP_GLOBALS.sidebarState = &#39;collapsed&#39;;
+            }
+            
+            localStorage.setItem(&#39;sidebarState&#39;, window.APP_GLOBALS.sidebarState);
+        };
+
+        // Initialize sidebar state
+        window.initSidebarState = function() {
+            const savedState = localStorage.getItem(&#39;sidebarState&#39;) || &#39;expanded&#39;;
+            window.APP_GLOBALS.sidebarState = savedState;
+            
+            const sidebar = document.querySelector(&#39;[data-section-id="common_sidebar"]&#39;);
+            if (sidebar) {
+                sidebar.classList.add(savedState === &#39;collapsed&#39; ? &#39;sidebar-collapsed&#39; : &#39;sidebar-expanded&#39;);
+            }
+        };
+
+        // Notification utilities
+        window.showNotification = function(message, type = &#39;info&#39;) {
+            const notification = document.createElement(&#39;div&#39;);
+            notification.className = `alert alert-${type} fixed top-4 right-4 w-96 z-50 shadow-lg`;
+            notification.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="iconify" data-icon="heroicons:information-circle-solid" data-width="20"></span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        };
+
+        // Character management utilities
+        window.setCurrentCharacter = function(characterData) {
+            window.APP_GLOBALS.currentCharacter = characterData;
+            localStorage.setItem(&#39;currentCharacter&#39;, JSON.stringify(characterData));
+        };
+
+        window.getCurrentCharacter = function() {
+            if (window.APP_GLOBALS.currentCharacter) {
+                return window.APP_GLOBALS.currentCharacter;
+            }
+            
+            const stored = localStorage.getItem(&#39;currentCharacter&#39;);
+            if (stored) {
+                window.APP_GLOBALS.currentCharacter = JSON.parse(stored);
+                return window.APP_GLOBALS.currentCharacter;
+            }
+            
+            return null;
+        };
+
+        // Chat history management
+        window.addChatMessage = function(message) {
+            window.APP_GLOBALS.chatHistory.push({
+                ...message,
+                timestamp: Date.now()
+            });
+            
+            // Keep only last 100 messages
+            if (window.APP_GLOBALS.chatHistory.length > 100) {
+                window.APP_GLOBALS.chatHistory = window.APP_GLOBALS.chatHistory.slice(-100);
+            }
+            
+            localStorage.setItem(&#39;chatHistory&#39;, JSON.stringify(window.APP_GLOBALS.chatHistory));
+        };
+
+        window.getChatHistory = function() {
+            if (window.APP_GLOBALS.chatHistory.length > 0) {
+                return window.APP_GLOBALS.chatHistory;
+            }
+            
+            const stored = localStorage.getItem(&#39;chatHistory&#39;);
+            if (stored) {
+                window.APP_GLOBALS.chatHistory = JSON.parse(stored);
+            }
+            
+            return window.APP_GLOBALS.chatHistory;
+        };
+
+        window.clearChatHistory = function() {
+            window.APP_GLOBALS.chatHistory = [];
+            localStorage.removeItem(&#39;chatHistory&#39;);
+        };
+
+        // Initialize components when DOM is loaded
+        document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+            initSidebarState();
+        });
+
+    })();
+    </script>
+    <script>
+(function() {
+    &#39;use strict&#39;;
+
+    // Character creation state
+    let characterData = {
+        name: &#39;&#39;,
+        description: &#39;&#39;,
+        personalityPreset: &#39;&#39;,
+        customInstructions: &#39;&#39;,
+        examples: [],
+        storyBackground: &#39;&#39;,
+        isPublic: false,
+        avatar: null,
+        personality: {
+            energy: 50,
+            friendliness: 50,
+            humor: 50,
+            professionalism: 50,
+            creativity: 50,
+            empathy: 50
+        }
+    };
+
+    let radarChart = null;
+
+    // Initialize page
+    document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+        initializeRadarChart();
+        bindFormEvents();
+        loadPresetPersonalities();
+        
+        // Set active sidebar item
+        if (window.setActiveSidebarItem) {
+            window.setActiveSidebarItem(&#39;create_character_page&#39;);
+        }
+    });
+
+    // Initialize radar chart
+    function initializeRadarChart() {
+        const canvas = document.getElementById(&#39;personality-radar&#39;);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext(&#39;2d&#39;);
+        radarChart = new RadarChart(ctx, canvas.width, canvas.height);
+        updateRadarChart();
+    }
+
+    // Simple radar chart implementation
+    class RadarChart {
+        constructor(ctx, width, height) {
+            this.ctx = ctx;
+            this.width = width;
+            this.height = height;
+            this.centerX = width / 2;
+            this.centerY = height / 2;
+            this.radius = Math.min(width, height) / 2 - 40;
+            this.labels = [&#39;活泼度&#39;, &#39;友善度&#39;, &#39;幽默感&#39;, &#39;专业性&#39;, &#39;创造力&#39;, &#39;同理心&#39;];
+            this.colors = [
+                &#39;rgba(99, 102, 241, 0.6)&#39;,   // Primary
+                &#39;rgba(236, 72, 153, 0.6)&#39;,   // Secondary
+                &#39;rgba(34, 197, 94, 0.6)&#39;,    // Accent
+                &#39;rgba(59, 130, 246, 0.6)&#39;,   // Info
+                &#39;rgba(251, 191, 36, 0.6)&#39;,   // Warning
+                &#39;rgba(239, 68, 68, 0.6)&#39;     // Error
+            ];
+        }
+
+        draw(values) {
+            this.ctx.clearRect(0, 0, this.width, this.height);
+            this.drawGrid();
+            this.drawLabels();
+            this.drawData(values);
+        }
+
+        drawGrid() {
+            const ctx = this.ctx;
+            const levels = 5;
+            
+            ctx.strokeStyle = &#39;rgba(226, 232, 240, 1)&#39;;
+            ctx.lineWidth = 1;
+
+            // Draw concentric polygons
+            for (let level = 1; level <= levels; level++) {
+                const radius = (this.radius / levels) * level;
+                ctx.beginPath();
+                
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i * Math.PI * 2) / 6 - Math.PI / 2;
+                    const x = this.centerX + Math.cos(angle) * radius;
+                    const y = this.centerY + Math.sin(angle) * radius;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // Draw lines from center to vertices
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI * 2) / 6 - Math.PI / 2;
+                const x = this.centerX + Math.cos(angle) * this.radius;
+                const y = this.centerY + Math.sin(angle) * this.radius;
+                
+                ctx.beginPath();
+                ctx.moveTo(this.centerX, this.centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+        }
+
+        drawLabels() {
+            const ctx = this.ctx;
+            ctx.fillStyle = &#39;rgba(30, 41, 59, 1)&#39;;
+            ctx.font = &#39;12px sans-serif&#39;;
+            ctx.textAlign = &#39;center&#39;;
+            ctx.textBaseline = &#39;middle&#39;;
+
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI * 2) / 6 - Math.PI / 2;
+                const x = this.centerX + Math.cos(angle) * (this.radius + 20);
+                const y = this.centerY + Math.sin(angle) * (this.radius + 20);
+                
+                ctx.fillText(this.labels[i], x, y);
+            }
+        }
+
+        drawData(values) {
+            const ctx = this.ctx;
+            
+            // Draw filled area
+            ctx.fillStyle = &#39;rgba(99, 102, 241, 0.2)&#39;;
+            ctx.strokeStyle = &#39;rgba(99, 102, 241, 1)&#39;;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI * 2) / 6 - Math.PI / 2;
+                const value = values[i] / 100;
+                const radius = this.radius * value;
+                const x = this.centerX + Math.cos(angle) * radius;
+                const y = this.centerY + Math.sin(angle) * radius;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw data points
+            ctx.fillStyle = &#39;rgba(99, 102, 241, 1)&#39;;
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI * 2) / 6 - Math.PI / 2;
+                const value = values[i] / 100;
+                const radius = this.radius * value;
+                const x = this.centerX + Math.cos(angle) * radius;
+                const y = this.centerY + Math.sin(angle) * radius;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
+    // Update radar chart
+    function updateRadarChart() {
+        if (!radarChart) return;
+        
+        const values = [
+            characterData.personality.energy,
+            characterData.personality.friendliness,
+            characterData.personality.humor,
+            characterData.personality.professionalism,
+            characterData.personality.creativity,
+            characterData.personality.empathy
+        ];
+        
+        radarChart.draw(values);
+    }
+
+    // Update personality from sliders
+    window.updatePersonality = function() {
+        const sliders = [&#39;energy&#39;, &#39;friendliness&#39;, &#39;humor&#39;, &#39;professionalism&#39;, &#39;creativity&#39;, &#39;empathy&#39;];
+        
+        sliders.forEach(trait => {
+            const slider = document.getElementById(`${trait}-slider`);
+            const valueDisplay = document.getElementById(`${trait}-value`);
+            
+            if (slider &amp;&amp; valueDisplay) {
+                const value = parseInt(slider.value);
+                characterData.personality[trait] = value;
+                valueDisplay.textContent = value;
+            }
+        });
+        
+        updateRadarChart();
+    };
+
+    // Bind form events
+    function bindFormEvents() {
+        // Basic form fields
+        const nameInput = document.getElementById(&#39;character-name&#39;);
+        const descInput = document.getElementById(&#39;character-description&#39;);
+        const presetSelect = document.getElementById(&#39;personality-preset&#39;);
+        const instructionsInput = document.getElementById(&#39;custom-instructions&#39;);
+        const backgroundInput = document.getElementById(&#39;story-background&#39;);
+        const publicToggle = document.getElementById(&#39;is-public&#39;);
+
+        if (nameInput) nameInput.addEventListener(&#39;input&#39;, (e) => characterData.name = e.target.value);
+        if (descInput) descInput.addEventListener(&#39;input&#39;, (e) => characterData.description = e.target.value);
+        if (presetSelect) presetSelect.addEventListener(&#39;change&#39;, handlePresetChange);
+        if (instructionsInput) instructionsInput.addEventListener(&#39;input&#39;, (e) => characterData.customInstructions = e.target.value);
+        if (backgroundInput) backgroundInput.addEventListener(&#39;input&#39;, (e) => characterData.storyBackground = e.target.value);
+        if (publicToggle) publicToggle.addEventListener(&#39;change&#39;, (e) => characterData.isPublic = e.target.checked);
+
+        // Form validation
+        if (nameInput) nameInput.addEventListener(&#39;blur&#39;, validateField);
+        if (descInput) descInput.addEventListener(&#39;blur&#39;, validateField);
+    }
+
+    // Handle preset personality change
+    function handlePresetChange(e) {
+        const preset = e.target.value;
+        characterData.personalityPreset = preset;
+        
+        const presets = {
+            friendly: { energy: 70, friendliness: 90, humor: 60, professionalism: 50, creativity: 60, empathy: 80 },
+            professional: { energy: 40, friendliness: 60, humor: 30, professionalism: 90, creativity: 50, empathy: 60 },
+            humorous: { energy: 80, friendliness: 70, humor: 95, professionalism: 40, creativity: 85, empathy: 65 },
+            wise: { energy: 30, friendliness: 70, humor: 40, professionalism: 80, creativity: 70, empathy: 90 },
+            energetic: { energy: 95, friendliness: 80, humor: 75, professionalism: 50, creativity: 80, empathy: 70 },
+            mysterious: { energy: 40, friendliness: 30, humor: 20, professionalism: 70, creativity: 90, empathy: 50 }
+        };
+
+        if (presets[preset]) {
+            characterData.personality = { ...presets[preset] };
+            updateSlidersFromData();
+            updateRadarChart();
+        }
+    }
+
+    // Update sliders from data
+    function updateSlidersFromData() {
+        Object.keys(characterData.personality).forEach(trait => {
+            const slider = document.getElementById(`${trait}-slider`);
+            const valueDisplay = document.getElementById(`${trait}-value`);
+            
+            if (slider &amp;&amp; valueDisplay) {
+                const value = characterData.personality[trait];
+                slider.value = value;
+                valueDisplay.textContent = value;
+            }
+        });
+    }
+
+    // Load preset personalities (stub)
+    function loadPresetPersonalities() {
+        // This would typically load from an API
+    }
+
+    // Avatar upload handling
+    window.handleAvatarUpload = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith(&#39;image/&#39;)) {
+            showNotification(&#39;请选择有效的图片文件&#39;, &#39;error&#39;);
+            return;
+        }
+
+        // Validate file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification(&#39;图片文件不能超过5MB&#39;, &#39;error&#39;);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById(&#39;avatar-preview&#39;);
+            if (preview) {
+                preview.innerHTML = `
+                    <img src="${e.target.result}" alt="Avatar Preview" class="w-32 h-32 mx-auto mb-4 rounded-full object-cover border-3 border-primary" />
+                    <p class="text-primary font-medium">头像已上传</p>
+                    <p class="text-sm text-base-content/60">点击重新选择</p>
+                `;
+            }
+            characterData.avatar = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Add example pair
+    window.addExamplePair = function() {
+        const container = document.getElementById(&#39;example-pairs&#39;);
+        if (!container) return;
+
+        const pairDiv = document.createElement(&#39;div&#39;);
+        pairDiv.className = &#39;example-pair&#39;;
+        pairDiv.setAttribute(&#39;data-repeatable&#39;, &#39;true&#39;);
+        pairDiv.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">用户输入示例</span>
+                    </label>
+                    <textarea class="textarea textarea-bordered focus:textarea-primary h-20 input-example" placeholder="用户可能会说的话..."></textarea>
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">AI回复示例</span>
+                    </label>
+                    <textarea class="textarea textarea-bordered focus:textarea-primary h-20 output-example" placeholder="AI应该如何回复..."></textarea>
+                </div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm absolute top-2 right-2" onclick="removeExamplePair(this)">
+                <span class="iconify" data-icon="heroicons:x-mark" data-width="16"></span>
+            </button>
+        `;
+        
+        container.appendChild(pairDiv);
+    };
+
+    // Remove example pair
+    window.removeExamplePair = function(button) {
+        const pair = button.closest(&#39;.example-pair&#39;);
+        if (pair) {
+            pair.remove();
+        }
+    };
+
+    // Generate examples with AI assistance (stub)
+    window.generateExamples = function() {
+        showNotification(&#39;AI辅助生成功能开发中...&#39;, &#39;info&#39;);
+    };
+
+    // Test character output
+    window.testCharacterOutput = function() {
+        const testInput = document.getElementById(&#39;test-input&#39;);
+        const testOutput = document.getElementById(&#39;test-output&#39;);
+        
+        if (!testInput || !testOutput) return;
+        
+        const question = testInput.value.trim();
+        if (!question) {
+            showNotification(&#39;请输入测试问题&#39;, &#39;warning&#39;);
+            return;
+        }
+
+        // Show loading state
+        testOutput.textContent = &#39;正在生成回复...&#39;;
+        
+        // Simulate AI response based on personality
+        setTimeout(() => {
+            const mockResponse = generateMockResponse(question);
+            testOutput.textContent = mockResponse;
+        }, 1500);
+    };
+
+    // Generate mock response based on personality
+    function generateMockResponse(question) {
+        const personality = characterData.personality;
+        const name = characterData.name || &#39;我&#39;;
+        
+        let response = `你好！我是${name}。`;
+        
+        if (personality.friendliness > 70) {
+            response += &#39;很高兴和你聊天！&#39;;
+        }
+        
+        if (personality.humor > 70) {
+            response += &#39;😊 &#39;;
+        }
+        
+        if (personality.professionalism > 70) {
+            response += `关于你的问题"${question}"，我认为这是一个很好的问题。`;
+        } else {
+            response += `关于"${question}"这个问题，`;
+        }
+        
+        if (personality.creativity > 70) {
+            response += &#39;让我从一个独特的角度来回答...&#39;;
+        }
+        
+        if (personality.empathy > 70) {
+            response += &#39;我理解你的想法，&#39;;
+        }
+        
+        response += &#39;这只是一个基于当前性格设置的模拟回复。实际的AI回复会更加智能和个性化。&#39;;
+        
+        return response;
+    }
+
+    // Form validation
+    function validateField(e) {
+        const field = e.target;
+        const value = field.value.trim();
+        
+        field.classList.remove(&#39;error&#39;, &#39;success&#39;);
+        
+        if (field.hasAttribute(&#39;required&#39;) &amp;&amp; !value) {
+            field.classList.add(&#39;error&#39;);
+            return false;
+        }
+        
+        if (field.id === &#39;character-name&#39; &amp;&amp; value.length < 2) {
+            field.classList.add(&#39;error&#39;);
+            return false;
+        }
+        
+        if (field.id === &#39;character-description&#39; &amp;&amp; value.length < 10) {
+            field.classList.add(&#39;error&#39;);
+            return false;
+        }
+        
+        field.classList.add(&#39;success&#39;);
+        return true;
+    }
+
+    // Validate entire form
+    function validateForm() {
+        const requiredFields = document.querySelectorAll(&#39;#character-creation-form [required]&#39;);
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!validateField({ target: field })) {
+                isValid = false;
+            }
+        });
+        
+        return isValid;
+    }
+
+    // Save and chat
+    window.saveAndChat = function() {
+        if (!validateForm()) {
+            showNotification(&#39;请填写所有必填字段&#39;, &#39;error&#39;);
+            return;
+        }
+        
+        // Collect all form data
+        collectFormData();
+        
+        // Save character data
+        setCurrentCharacter(characterData);
+        
+        showNotification(&#39;人物创建成功！正在跳转到聊天页面...&#39;, &#39;success&#39;);
+        
+        setTimeout(() => {
+            navigateTo(&#39;chat_page&#39;);
+        }, 1500);
+    };
+
+    // Save and return
+    window.saveAndReturn = function() {
+        if (!validateForm()) {
+            showNotification(&#39;请填写所有必填字段&#39;, &#39;error&#39;);
+            return;
+        }
+        
+        collectFormData();
+        setCurrentCharacter(characterData);
+        
+        showNotification(&#39;人物创建成功！&#39;, &#39;success&#39;);
+        
+        setTimeout(() => {
+            navigateTo(&#39;home_page&#39;);
+        }, 1500);
+    };
+
+    // Cancel creation
+    window.cancelCreation = function() {
+        if (hasUnsavedChanges()) {
+            if (confirm(&#39;确定要放弃当前的创建内容吗？所有未保存的更改将丢失。&#39;)) {
+                navigateTo(&#39;home_page&#39;);
+            }
+        } else {
+            navigateTo(&#39;home_page&#39;);
+        }
+    };
+
+    // Clear all fields
+    window.clearAllFields = function() {
+        if (confirm(&#39;确定要清除所有内容吗？此操作不可撤销。&#39;)) {
+            // Reset form
+            document.getElementById(&#39;character-creation-form&#39;).reset();
+            
+            // Reset character data
+            characterData = {
+                name: &#39;&#39;,
+                description: &#39;&#39;,
+                personalityPreset: &#39;&#39;,
+                customInstructions: &#39;&#39;,
+                examples: [],
+                storyBackground: &#39;&#39;,
+                isPublic: false,
+                avatar: null,
+                personality: {
+                    energy: 50,
+                    friendliness: 50,
+                    humor: 50,
+                    professionalism: 50,
+                    creativity: 50,
+                    empathy: 50
+                }
+            };
+            
+            // Reset avatar preview
+            const preview = document.getElementById(&#39;avatar-preview&#39;);
+            if (preview) {
+                preview.innerHTML = `
+                    <div class="w-32 h-32 mx-auto mb-4 bg-base-200 rounded-full flex items-center justify-center">
+                        <span class="iconify text-base-content/40" data-icon="heroicons:user" data-width="48"></span>
+                    </div>
+                    <p class="text-base-content/60 mb-2">点击上传头像</p>
+                    <p class="text-sm text-base-content/40">支持 JPG、PNG 格式，建议尺寸 512x512</p>
+                `;
+            }
+            
+            // Reset sliders and radar chart
+            updateSlidersFromData();
+            updateRadarChart();
+            
+            // Clear test output
+            const testOutput = document.getElementById(&#39;test-output&#39;);
+            if (testOutput) {
+                testOutput.textContent = &#39;在这里查看AI根据当前设置生成的回复...&#39;;
+            }
+            
+            showNotification(&#39;所有内容已清除&#39;, &#39;info&#39;);
+        }
+    };
+
+    // Collect form data
+    function collectFormData() {
+        // Collect examples
+        const examplePairs = document.querySelectorAll(&#39;.example-pair&#39;);
+        characterData.examples = [];
+        
+        examplePairs.forEach(pair => {
+            const input = pair.querySelector(&#39;.input-example&#39;).value.trim();
+            const output = pair.querySelector(&#39;.output-example&#39;).value.trim();
+            
+            if (input &amp;&amp; output) {
+                characterData.examples.push({ input, output });
+            }
+        });
+    }
+
+    // Check for unsaved changes
+    function hasUnsavedChanges() {
+        return characterData.name || characterData.description || characterData.customInstructions || characterData.storyBackground;
+    }
+
+})();
+</script>
+
+<script>
+    setTimeout(() => {
+      Holder.run({
+        domain: "placehold.co"
+      })
+    }, 100)
+  </script></body></html>'></iframe>
+                    </div>
+                  </div>
+
+                </body>
+                </html>
+            
