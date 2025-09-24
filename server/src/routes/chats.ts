@@ -76,3 +76,27 @@ chatsRouter.post('/sessions/:sessionId/messages', async (req, res) => {
     res.status(500).json({ error: 'Failed to add chat message' });
   }
 });
+
+// 删除聊天会话
+chatsRouter.delete('/sessions/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    await DatabaseService.deleteChatSession(sessionId);
+
+    res.status(200).json({ message: 'Session deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting chat session:', error);
+    res.status(500).json({ error: 'Failed to delete chat session' });
+  }
+});
+
+// 清理损坏的会话数据
+chatsRouter.post('/sessions/cleanup', async (req, res) => {
+  try {
+    await DatabaseService.cleanCorruptedSessions();
+    res.status(200).json({ message: 'Corrupted sessions cleaned successfully' });
+  } catch (error) {
+    console.error('Error cleaning corrupted sessions:', error);
+    res.status(500).json({ error: 'Failed to clean corrupted sessions' });
+  }
+});

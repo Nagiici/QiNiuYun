@@ -1,27 +1,40 @@
 <template>
   <div class="min-h-screen bg-base-100">
     <!-- 侧边栏 -->
-    <div class="drawer">
+    <div class="drawer" :class="{ 'lg:drawer-open': sidebarOpen }">
       <input id="drawer-toggle" type="checkbox" class="drawer-toggle" v-model="sidebarOpen" />
 
       <!-- 主内容区域 -->
       <div class="drawer-content flex flex-col">
-        <!-- 移动端菜单按钮 -->
-        <div class="navbar lg:hidden bg-base-100 border-b border-base-300">
+        <!-- 导航栏 -->
+        <div class="navbar bg-base-100 border-b border-base-300">
           <div class="flex-none">
-            <label for="drawer-toggle" class="btn btn-square btn-ghost">
+            <!-- 移动端菜单按钮 -->
+            <label for="drawer-toggle" class="btn btn-square btn-ghost lg:hidden">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
               </svg>
             </label>
+
+            <!-- 桌面端侧边栏切换按钮 -->
+            <button
+              @click="toggleSidebar"
+              class="btn btn-square btn-ghost hidden lg:flex hover:bg-base-200 transition-colors"
+              :title="sidebarOpen ? '隐藏侧边栏' : '显示侧边栏'"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 transition-transform duration-200" :class="{ 'rotate-180': !sidebarOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
           </div>
           <div class="flex-1">
-            <h1 class="text-lg font-bold">AI人物聊天</h1>
+            <h1 class="text-lg font-bold">{{ sidebarOpen ? '隐藏侧边栏' : '显示侧边栏' }}</h1>
           </div>
         </div>
 
+
         <!-- 主页内容 -->
-        <div class="flex-1 lg:ml-80 p-4">
+        <div class="flex-1 p-4 transition-all duration-300" :class="{ 'lg:ml-80': sidebarOpen }">
           <!-- Hero区域 -->
           <section class="hero min-h-96 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 rounded-2xl mb-8">
             <div class="hero-content text-center max-w-4xl">
@@ -309,7 +322,7 @@ const chatStore = useChatStore();
 const globalStore = useGlobalStore();
 
 // 响应式数据
-const sidebarOpen = ref(false);
+const sidebarOpen = ref(true); // 默认打开侧边栏
 const filterType = ref('all');
 const searchQuery = ref('');
 const sortBy = ref('popular');
@@ -406,6 +419,11 @@ const startQuickChat = () => {
     globalStore.showNotification('暂无可用角色，请先创建一个角色', 'warning');
     router.push('/create');
   }
+};
+
+// 切换侧边栏显示/隐藏
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value;
 };
 
 // 生命周期

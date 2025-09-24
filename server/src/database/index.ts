@@ -212,4 +212,30 @@ export class DatabaseService {
       WHERE id = ?
     `, [content.substring(0, 50) + (content.length > 50 ? '...' : ''), sessionId]);
   }
+
+  // 删除聊天会话（包括所有相关消息）
+  static async deleteChatSession(sessionId: string) {
+    // 删除会话的所有消息
+    await dbRun(`DELETE FROM chat_messages WHERE session_id = ?`, [sessionId]);
+
+    // 删除会话记录
+    await dbRun(`DELETE FROM chat_sessions WHERE id = ?`, [sessionId]);
+  }
+
+  // 清理损坏的字符编码数据
+  static async cleanCorruptedSessions() {
+    // 删除包含乱码字符名的会话
+    await dbRun(`
+      DELETE FROM chat_sessions
+      WHERE character_name LIKE '%��%'
+         OR character_name LIKE '%ǰ%'
+         OR character_name LIKE '%�%'
+    `);
+
+    // 删除对应的消息
+    await dbRun(`
+      DELETE FROM chat_messages
+      WHERE session_id NOT IN (SELECT id FROM chat_sessions)
+    `);
+  }
 }

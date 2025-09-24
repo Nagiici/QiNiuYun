@@ -40,7 +40,13 @@
       "Bash(del database.db)",
       "Bash(npm run dev:backend)",
       "Bash(npm install sqlite3)",
-      "Bash(node clean-database.js)"
+      "Bash(node clean-database.js)",
+      "Bash(taskkill /PID 16000 /F)",
+      "Bash(cmd /c \"taskkill /PID 16000 /F\")",
+      "Bash(curl \"http://localhost:3003/api/chats/sessions\")",
+      "Bash(curl -X POST \"http://localhost:8080/api/ai/chat\" -H \"Content-Type: application/json\" -d \"{\"\"character_id\"\":1,\"\"session_id\"\":\"\"3def7d2f-77da-4f54-8599-2193f1ea50a1\"\",\"\"message\"\":\"\"你好，哈利！\"\"}\")",
+      "Bash(curl -X POST \"http://localhost:8080/api/chats/sessions/cleanup\")",
+      "Bash(curl -X DELETE \"http://localhost:8080/api/chats/sessions/0aecb54d-0fd2-4b40-aa50-484204e2f264\")"
     ],
     "deny": [],
     "ask": []

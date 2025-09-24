@@ -170,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, onActivated, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useChatStore, type ChatSession } from '@/stores/chat';
 import { useCharactersStore } from '@/stores/characters';
@@ -244,14 +244,30 @@ const deleteSession = async (session: ChatSession) => {
   }
 };
 
-// 生命周期
-onMounted(async () => {
+// 获取会话列表的函数
+const refreshSessions = async () => {
   try {
     await chatStore.fetchSessions();
   } catch (error) {
     console.error('Failed to fetch chat sessions:', error);
   }
-});
+};
+
+// 监听路由变化，当返回首页时刷新会话列表
+watch(
+  () => route.name,
+  (newRouteName) => {
+    if (newRouteName === 'Home') {
+      refreshSessions();
+    }
+  }
+);
+
+// 生命周期
+onMounted(refreshSessions);
+
+// 当组件激活时也刷新会话列表（用于keep-alive场景）
+onActivated(refreshSessions);
 </script>
 
 <style scoped>

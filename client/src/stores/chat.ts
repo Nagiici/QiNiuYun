@@ -133,6 +133,12 @@ export const useChatStore = defineStore('chat', () => {
       if (currentSession.value) {
         currentSession.value.last_message = aiResponse.data.response;
         currentSession.value.last_activity = new Date().toISOString();
+
+        // 更新sessions数组中的对应会话
+        const sessionIndex = sessions.value.findIndex(s => s.id === currentSession.value!.id);
+        if (sessionIndex !== -1) {
+          sessions.value[sessionIndex] = { ...currentSession.value };
+        }
       }
 
       return aiMessage;
@@ -153,7 +159,10 @@ export const useChatStore = defineStore('chat', () => {
   // 删除会话
   const deleteSession = async (sessionId: string) => {
     try {
-      // TODO: 实现删除会话的API
+      // 调用API删除会话
+      await api.delete(`/chats/sessions/${sessionId}`);
+
+      // 从本地状态中移除
       sessions.value = sessions.value.filter(s => s.id !== sessionId);
 
       if (currentSession.value?.id === sessionId) {
@@ -161,6 +170,18 @@ export const useChatStore = defineStore('chat', () => {
       }
     } catch (error) {
       console.error('Failed to delete session:', error);
+      throw error;
+    }
+  };
+
+  // 清理损坏的会话数据
+  const cleanCorruptedSessions = async () => {
+    try {
+      await api.post('/chats/sessions/cleanup');
+      // 重新获取会话列表
+      await fetchSessions();
+    } catch (error) {
+      console.error('Failed to clean corrupted sessions:', error);
       throw error;
     }
   };
@@ -177,5 +198,6 @@ export const useChatStore = defineStore('chat', () => {
     sendMessage,
     clearCurrentSession,
     deleteSession,
+    cleanCorruptedSessions,
   };
 });
