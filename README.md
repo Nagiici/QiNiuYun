@@ -1,296 +1,308 @@
 # 🎭 AI Character Roleplay Website
 
-A comprehensive AI-powered character roleplay platform where users can create, customize, and chat with AI characters using voice and text. Built with modern web technologies and multiple AI provider integrations.
+一个功能完整的AI角色扮演平台，用户可以通过语音和文本与AI角色进行互动。基于现代Web技术构建，支持多种AI提供商集成。
 
-![Project Status](https://img.shields.io/badge/Status-Production%20Ready-green)
+## 📋 项目概述
+
+**QiNiuYun AI角色扮演平台**是一个全栈Web应用，提供：
+- 🤖 **智能角色创建** - 6维个性系统，支持自定义角色背景
+- 💬 **实时聊天** - WebSocket支持，类似微信的聊天界面
+- 🎙️ **语音交互** - 语音识别和文本转语音功能
+- 🔄 **多AI提供商** - 支持Groq、OpenAI、Cohere、Anthropic、Ollama
+- 📱 **响应式设计** - 完美支持桌面和移动设备
+- 🔒 **安全可靠** - 完整的输入验证和安全防护
+
+![项目状态](https://img.shields.io/badge/状态-生产就绪-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)
 ![Vue](https://img.shields.io/badge/Vue-3.x-green)
 ![Node.js](https://img.shields.io/badge/Node.js-16%2B-green)
+![中文支持](https://img.shields.io/badge/中文-完全支持-red)
 
-## 🌟 **Features**
 
-### 🏠 **Homepage**
-- Browse preset characters (Harry Potter, Socrates, Einstein)
-- Search and filter characters by personality
-- Quick access to chat history and character creation
+## 🌟 **核心功能**
 
-### 👤 **Advanced Character Creation**
-- **6D Personality System**: Energy, Friendliness, Humor, Professionalism, Creativity, Empathy
-- **Interactive Radar Chart**: Real-time personality visualization
-- **Character Backgrounds**: Story, custom instructions, example dialogues
-- **Avatar Upload**: Custom character images
-- **Personality Presets**: Quick templates (Friendly, Professional, Mysterious, etc.)
+### 🏠 **主页**
+- 浏览预设角色（哈利波特、苏格拉底、爱因斯坦等）
+- 按个性特征搜索和筛选角色
+- 快速访问聊天历史和角色创建
 
-### 💬 **Intelligent Chat Interface**
-- **Real-time messaging** with WebSocket support
-- **Voice input/output** with press-to-talk recording
-- **Character-consistent responses** based on personality profiles
-- **Chat history persistence** across sessions
-- **Mobile-responsive** WeChat-like UI
+### 👤 **高级角色创建**
+- **6维个性系统**: 能量、友好度、幽默感、专业性、创造力、同理心
+- **交互式雷达图**: 实时个性可视化
+- **角色背景**: 故事背景、自定义指令、示例对话
+- **头像上传**: 支持自定义角色图片
+- **个性预设**: 快速模板（友好型、专业型、神秘型等）
 
-### 🤖 **Multi-Provider AI Integration**
-- **5 AI Providers**: Groq, OpenAI, Cohere, Anthropic, Ollama
-- **Intelligent Fallback**: Automatic switching between providers
-- **Rule-based Backup**: Works without any API keys
-- **Cost Optimization**: Uses free tiers across multiple services
+### 💬 **智能聊天界面**
+- **实时消息** 支持WebSocket
+- **语音输入/输出** 支持按住说话录音
+- **角色一致性回复** 基于个性配置文件
+- **聊天历史持久化** 支持跨会话
+- **移动端响应式** 类似微信的UI设计
 
-### 🎙️ **Voice Capabilities**
-- **Speech Recognition**: Web Speech API + optional cloud services
-- **Text-to-Speech**: Browser synthesis + premium voice options
-- **Voice Recording**: Press-and-hold recording with visual feedback
-- **Multi-language Support**: Optimized for Chinese and English
+### 🤖 **多提供商AI集成**
+- **5种AI提供商**: Groq、OpenAI、Cohere、Anthropic、Ollama
+- **智能回退机制**: 自动在提供商之间切换
+- **基于规则的备用方案**: 无需API密钥即可工作
+- **成本优化**: 使用多个服务的免费额度
 
-### 🧠 **3 Core AI Skills**
-1. **个性化对话** (Personalized Dialogue): Responses adapt to character personality
-2. **情感识别** (Emotion Recognition): Detects user emotions and responds accordingly
-3. **记忆管理** (Memory Management): Maintains conversation context and history
+### 🎙️ **语音功能**
+- **语音识别**: Web Speech API + 可选云服务
+- **文本转语音**: 浏览器合成 + 高级语音选项
+- **语音录制**: 按住录音带视觉反馈
+- **多语言支持**: 优化支持中文和英文
 
-## 🚀 **Quick Start**
+### 🧠 **3大核心AI技能**
+1. **个性化对话**: 响应根据角色个性调整
+2. **情感识别**: 检测用户情绪并相应回应
+3. **记忆管理**: 维护对话上下文和历史
 
-### **Prerequisites**
+## 🚀 **快速开始**
+
+### **环境要求**
 - Node.js 16+
-- npm or yarn
+- npm 或 yarn
 
-### **Installation**
+### **安装步骤**
 ```bash
-# Clone the repository
+# 克隆仓库
 git clone <your-repository-url>
 cd QiNiuYun
 
-# Install all dependencies
+# 安装所有依赖
 npm run install:all
 
-# Start development servers
+# 启动开发服务器
 npm run dev
 ```
 
-### **Access**
-- **Frontend**: http://localhost:3001
-- **Backend API**: http://localhost:8080
-- **Chat WebSocket**: ws://localhost:8080
+### **访问地址**
+- **前端**: http://localhost:3001
+- **后端API**: http://localhost:8080
+- **聊天WebSocket**: ws://localhost:8080
 
-## 🛠️ **Tech Stack**
+## 🛠️ **技术栈**
 
-### **Frontend**
-- **Vue 3** - Progressive JavaScript framework
-- **TypeScript** - Type safety and better DX
-- **Vite** - Fast build tool and dev server
-- **TailwindCSS** - Utility-first CSS framework
-- **DaisyUI** - Beautiful UI components
-- **Pinia** - Vue state management
+### **前端**
+- **Vue 3** - 渐进式JavaScript框架
+- **TypeScript** - 类型安全和更好的开发体验
+- **Vite** - 快速构建工具和开发服务器
+- **TailwindCSS** - 实用优先的CSS框架
+- **DaisyUI** - 美观的UI组件
+- **Pinia** - Vue状态管理
 
-### **Backend**
-- **Node.js + Express** - Server runtime and framework
-- **TypeScript** - Full-stack type safety
-- **SQLite** - Embedded database (production-ready)
-- **WebSocket** - Real-time communication
-- **Multer** - File upload handling
+### **后端**
+- **Node.js + Express** - 服务器运行时和框架
+- **TypeScript** - 全栈类型安全
+- **SQLite** - 嵌入式数据库（生产就绪）
+- **WebSocket** - 实时通信
+- **Multer** - 文件上传处理
 
-### **AI & Voice Services**
-- **Groq API** - Fast LLM inference
-- **OpenAI API** - GPT models + Whisper speech
-- **Cohere API** - Command language models
-- **Anthropic Claude** - Constitutional AI
-- **Ollama** - Local LLM support
-- **Web Speech API** - Browser-native voice features
+### **AI & 语音服务**
+- **Groq API** - 快速LLM推理
+- **OpenAI API** - GPT模型 + Whisper语音
+- **Cohere API** - 命令语言模型
+- **Anthropic Claude** - 宪法AI
+- **Ollama** - 本地LLM支持
+- **Web Speech API** - 浏览器原生语音功能
 
-## 📁 **Project Structure**
+## 📁 **项目结构**
 
 ```
 QiNiuYun/
-├── client/                 # Vue.js Frontend
+├── client/                 # Vue.js 前端
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── views/         # Page components (Home, Chat, etc.)
-│   │   ├── stores/        # Pinia state management
-│   │   └── utils/         # Helper functions
-│   └── dist/              # Built frontend (production)
-├── server/                # Node.js Backend
+│   │   ├── components/     # 可复用UI组件
+│   │   ├── views/         # 页面组件（主页、聊天等）
+│   │   ├── stores/        # Pinia状态管理
+│   │   └── utils/         # 工具函数
+│   └── dist/              # 构建的前端（生产环境）
+├── server/                # Node.js 后端
 │   ├── src/
-│   │   ├── routes/        # API endpoints
-│   │   ├── database/      # SQLite database logic
-│   │   └── index.ts       # Server entry point
-│   ├── database.db        # SQLite database file
-│   └── uploads/           # User uploaded files
-├── Front-end-design/      # Original UI mockups
-├── DEPLOYMENT.md          # Production deployment guide
-└── README.md              # This file
+│   │   ├── routes/        # API端点
+│   │   ├── database/      # SQLite数据库逻辑
+│   │   └── index.ts       # 服务器入口点
+│   ├── database.db        # SQLite数据库文件
+│   └── uploads/           # 用户上传文件
+├── Front-end-design/      # 原始UI设计稿
+├── DEPLOYMENT.md          # 生产部署指南
+└── README.md              # 本文件
 ```
 
-## ⚙️ **Configuration**
+## ⚙️ **配置**
 
-### **Environment Variables**
-Copy `server/.env.example` to `server/.env` and configure:
+### **环境变量**
+复制 `server/.env.example` 到 `server/.env` 并配置：
 
 ```env
-# Required
+# 必需配置
 PORT=8080
 NODE_ENV=development
 
-# Optional AI API Keys (enables premium features)
+# 可选AI API密钥（启用高级功能）
 GROQ_API_KEY=your_groq_key_here
 OPENAI_API_KEY=your_openai_key_here
 COHERE_API_KEY=your_cohere_key_here
 ANTHROPIC_API_KEY=your_anthropic_key_here
 
-# Optional Voice Services
+# 可选语音服务
 TTS_API_KEY=your_elevenlabs_key_here
 TTS_SERVICE_URL=https://api.elevenlabs.io
 ```
 
-### **Free API Setup** (Optional but Recommended)
-1. **Groq**: https://console.groq.com/ - Fastest inference
-2. **OpenAI**: https://platform.openai.com/ - Most capable models
-3. **Cohere**: https://dashboard.cohere.com/ - Great for dialogue
-4. **Anthropic**: https://console.anthropic.com/ - Constitutional AI
+### **免费API设置**（可选但推荐）
+1. **Groq**: https://console.groq.com/ - 最快的推理速度
+2. **OpenAI**: https://platform.openai.com/ - 最强大的模型
+3. **Cohere**: https://dashboard.cohere.com/ - 优秀的对话能力
+4. **Anthropic**: https://console.anthropic.com/ 
 
-**Note**: The app works perfectly without any API keys using the built-in fallback system!
+**注意**: 即使没有任何API密钥，应用也能通过内置的回退系统完美工作！
 
-## 🧪 **Testing**
+## 🧪 **测试**
 
-### **Manual Testing**
+### **手动测试**
 ```bash
-# Start development servers
+# 启动开发服务器
 npm run dev
 
-# Test in browser
-# 1. Create a new character
-# 2. Start a chat conversation
-# 3. Try voice recording (allow microphone access)
-# 4. Test personality-based responses
+# 在浏览器中测试
+# 1. 创建新角色
+# 2. 开始聊天对话
+# 3. 尝试语音录制（允许麦克风访问）
+# 4. 测试基于个性的回复
 ```
 
-### **API Testing**
+### **API测试**
 ```bash
-# Test character API
+# 测试角色API
 curl http://localhost:8080/api/characters
 
-# Test AI chat
+# 测试AI聊天
 curl -X POST http://localhost:8080/api/ai/chat \
   -H "Content-Type: application/json" \
-  -d '{"character_id":1,"message":"Hello!","session_id":"test"}'
+  -d '{"character_id":1,"message":"你好！","session_id":"test"}'
 
-# Test emotion recognition
+# 测试情感识别
 curl -X POST http://localhost:8080/api/ai/emotion \
   -H "Content-Type: application/json" \
-  -d '{"message":"I am very happy!"}'
+  -d '{"message":"我今天很开心！"}'
 ```
 
-## 🎯 **Key Features Demonstration**
+## 🎯 **核心特性演示**
 
-### **1. Character Personality System**
+### **1. 角色个性系统**
 ```javascript
-// 6-dimensional personality affects all responses
+// 6维个性影响所有回复
 const personality = {
-  energy: 85,        // High energy = enthusiastic responses
-  friendliness: 90,  // High friendliness = warm, welcoming
-  humor: 70,         // Moderate humor = occasional jokes
-  professionalism: 50, // Balanced casual/professional
-  creativity: 80,    // High creativity = innovative ideas
-  empathy: 95        // High empathy = emotional support
+  energy: 85,        // 高能量 = 热情洋溢的回复
+  friendliness: 90,  // 高友好度 = 温暖、欢迎
+  humor: 70,         // 中等幽默 = 偶尔开玩笑
+  professionalism: 50, // 平衡的休闲/专业
+  creativity: 80,    // 高创造力 = 创新想法
+  empathy: 95        // 高同理心 = 情感支持
 }
 ```
 
-### **2. Multi-Provider AI Fallback**
+### **2. 多提供商AI回退机制**
 ```javascript
-// Tries providers in order until one succeeds
+// 按顺序尝试提供商直到成功
 const providers = [
-  'Groq (fastest)',
-  'OpenAI (smartest)',
-  'Cohere (dialogue)',
-  'Anthropic (safe)',
-  'Ollama (local)',
-  'Rule-based (always works)'
+  'Groq (最快)',
+  'OpenAI (最智能)',
+  'Cohere (对话)',
+  'Anthropic (安全)',
+  'Ollama (本地)',
+  '基于规则 (始终工作)'
 ]
 ```
 
-### **3. Voice Integration**
+### **3. 语音集成**
 ```javascript
-// Speech recognition + synthesis
+// 语音识别 + 合成
 const voiceFeatures = {
   speechRecognition: 'Web Speech API + Whisper',
-  textToSpeech: 'Browser synthesis + ElevenLabs',
-  realTimeRecording: 'Press-and-hold UI',
-  multiLanguage: 'Chinese + English optimized'
+  textToSpeech: '浏览器合成 + ElevenLabs',
+  realTimeRecording: '按住说话UI',
+  multiLanguage: '中文 + 英文优化'
 }
 ```
 
-## 📊 **Performance**
+## 📊 **性能指标**
 
-- **Frontend Bundle**: ~200KB gzipped
-- **Backend Memory**: ~50MB base usage
-- **Database**: SQLite handles 10k+ characters easily
-- **AI Response Time**: 1-5 seconds (varies by provider)
-- **Voice Latency**: Near real-time with Web APIs
+- **前端包大小**: ~200KB 压缩后
+- **后端内存**: ~50MB 基础使用量
+- **数据库**: SQLite轻松处理10k+角色
+- **AI响应时间**: 1-5秒（因提供商而异）
+- **语音延迟**: 使用Web API接近实时
 
-## 🔐 **Security Features**
+## 🔐 **安全特性**
 
-- **Input Validation**: All user inputs sanitized
-- **SQL Injection Prevention**: Parameterized queries
-- **XSS Protection**: Content Security Policy headers
-- **Rate Limiting**: API endpoint protection
-- **File Upload Security**: Type and size validation
+- **输入验证**: 所有用户输入都经过清理
+- **SQL注入防护**: 参数化查询
+- **XSS防护**: 内容安全策略头
+- **速率限制**: API端点保护
+- **文件上传安全**: 类型和大小验证
 
-## 🌐 **Browser Support**
+## 🌐 **浏览器支持**
 
-- **Chrome/Edge**: Full features including voice
-- **Firefox**: Full features including voice
-- **Safari**: Full features (may need HTTPS for voice)
-- **Mobile**: Responsive design, touch-optimized
+- **Chrome/Edge**: 完整功能包括语音
+- **Firefox**: 完整功能包括语音
+- **Safari**: 完整功能（语音可能需要HTTPS）
+- **移动端**: 响应式设计，触摸优化
 
-## 📈 **Roadmap**
+## 📈 **开发路线图**
 
-### **Phase 1** ✅ (Completed)
-- [x] Character creation with personality system
-- [x] AI chat with multiple providers
-- [x] Voice input/output capabilities
-- [x] Real-time messaging interface
-- [x] Database persistence
+### **第一阶段** ✅ (已完成)
+- [x] 带个性系统的角色创建
+- [x] 多提供商AI聊天
+- [x] 语音输入/输出功能
+- [x] 实时消息界面
+- [x] 数据库持久化
 
-### **Phase 2** (Future Enhancements)
-- [ ] User authentication and accounts
-- [ ] Character sharing marketplace
-- [ ] Group conversations
-- [ ] Advanced voice cloning
-- [ ] Mobile app (React Native)
+### **第二阶段** (未来增强)
+- [ ] 用户认证和账户系统
+- [ ] 角色分享市场
+- [ ] 群组对话
+- [ ] 高级语音克隆
+- [ ] 移动应用 (React Native)
 
-### **Phase 3** (Advanced Features)
-- [ ] Character image generation (AI art)
-- [ ] Multi-language interface
-- [ ] Plugin system for custom AI providers
-- [ ] Advanced analytics and insights
+### **第三阶段** (高级功能)
+- [ ] 角色图像生成 (AI艺术)
+- [ ] 多语言界面
+- [ ] 自定义AI提供商的插件系统
+- [ ] 高级分析和洞察
 
-## 🤝 **Contributing**
+## 🤝 **贡献指南**
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+1. Fork 本仓库
+2. 创建功能分支: `git checkout -b feature/amazing-feature`
+3. 提交更改: `git commit -m '添加新功能'`
+4. 推送到分支: `git push origin feature/amazing-feature`
+5. 提交 Pull Request
 
-## 📄 **License**
+## 📄 **许可证**
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+本项目采用 MIT 许可证 - 详情请参阅 LICENSE 文件。
 
-## 🎉 **Acknowledgments**
+## 🎉 **致谢**
 
-- **Vue.js Team** - Amazing framework
-- **TailwindCSS** - Beautiful utility classes
-- **DaisyUI** - Gorgeous UI components
-- **AI Providers** - Groq, OpenAI, Cohere, Anthropic
-- **Web APIs** - Speech Recognition & Synthesis
-
----
-
-## 📞 **Support & Questions**
-
-- 📖 **Documentation**: See `DEPLOYMENT.md` for production setup
-- 🐛 **Bug Reports**: Open an issue with detailed reproduction steps
-- 💡 **Feature Requests**: Describe your use case and desired behavior
-- 🤔 **Questions**: Check existing issues or start a discussion
-
-**Built with ❤️ using modern web technologies**
+- **Vue.js 团队** - 优秀的框架
+- **TailwindCSS** - 美观的实用类
+- **DaisyUI** - 精美的UI组件
+- **AI提供商** - Groq、OpenAI、Cohere、Anthropic
+- **Web APIs** - 语音识别与合成
 
 ---
 
-**⭐ If you find this project useful, please give it a star! ⭐**
+## 📞 **支持与问题**
+
+- 📖 **文档**: 查看 `DEPLOYMENT.md` 获取生产环境设置
+- 🐛 **错误报告**: 提交包含详细重现步骤的issue
+- 💡 **功能请求**: 描述您的用例和期望行为
+- 🤔 **问题**: 查看现有issue或开始讨论
+
+**使用现代Web技术构建 ❤️**
+
+---
+
+**⭐ 如果您觉得这个项目有用，请给它一个星标！ ⭐**
