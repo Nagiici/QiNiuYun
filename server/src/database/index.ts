@@ -74,6 +74,29 @@ export async function initDatabase() {
     )
   `);
 
+  // 创建AI配置表
+  await dbRun(`
+    CREATE TABLE IF NOT EXISTS ai_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      current_provider TEXT NOT NULL,
+      temperature REAL DEFAULT 0.7,
+      providers_config TEXT, -- JSON格式存储所有提供商配置
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // 创建语音服务配置表
+  await dbRun(`
+    CREATE TABLE IF NOT EXISTS speech_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tts_config TEXT, -- JSON格式存储TTS配置
+      stt_config TEXT, -- JSON格式存储STT配置
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // 插入一些预设角色数据
   await insertDefaultCharacters();
 
@@ -237,5 +260,124 @@ export class DatabaseService {
       DELETE FROM chat_messages
       WHERE session_id NOT IN (SELECT id FROM chat_sessions)
     `);
+  }
+
+  // AI配置管理方法
+
+  // 获取AI配置
+  static async getAiConfiguration() {
+    const config = await dbGet('SELECT * FROM ai_config ORDER BY updated_at DESC LIMIT 1');
+
+    if (config) {
+      return {
+        id: config.id,
+        currentProvider: config.current_provider,
+        temperature: config.temperature,
+        providers: JSON.parse(config.providers_config || '{}'),
+        createdAt: config.created_at,
+        updatedAt: config.updated_at
+      };
+    }
+
+    return null;
+  }
+
+  // 保存AI配置
+  static async saveAiConfiguration(configData: any) {
+    const { currentProvider, temperature, providers, updatedAt } = configData;
+
+    // 先删除旧配置，然后插入新配置（简单的版本控制）
+    await dbRun('DELETE FROM ai_config');
+
+    await dbRun(`
+      INSERT INTO ai_config (current_provider, temperature, providers_config, updated_at)
+      VALUES (?, ?, ?, ?)
+    `, [
+      currentProvider,
+      temperature || 0.7,
+      JSON.stringify(providers),
+      updatedAt || new Date().toISOString()
+    ]);
+  }
+
+  // 更新AI配置
+  static async updateAiConfiguration(configData: any) {
+    const { currentProvider, temperature, providers } = configData;
+
+    const existingConfig = await dbGet('SELECT id FROM ai_config ORDER BY updated_at DESC LIMIT 1');
+
+    if (existingConfig) {
+      await dbRun(`
+        UPDATE ai_config
+        SET current_provider = ?, temperature = ?, providers_config = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [
+        currentProvider,
+        temperature || 0.7,
+        JSON.stringify(providers),
+        existingConfig.id
+      ]);
+    } else {
+      // 如果没有现有配置，创建新配置
+      await this.saveAiConfiguration(configData);
+    }
+  }
+
+  // 语音服务配置管理方法
+
+  // 获取语音服务配置
+  static async getSpeechConfiguration() {
+    const config = await dbGet('SELECT * FROM speech_config ORDER BY updated_at DESC LIMIT 1');
+
+    if (config) {
+      return {
+        id: config.id,
+        tts: JSON.parse(config.tts_config || '{}'),
+        stt: JSON.parse(config.stt_config || '{}'),
+        createdAt: config.created_at,
+        updatedAt: config.updated_at
+      };
+    }
+
+    return null;
+  }
+
+  // 保存语音服务配置
+  static async saveSpeechConfiguration(configData: any) {
+    const { tts, stt, updatedAt } = configData;
+
+    // 先删除旧配置，然后插入新配置（简单的版本控制）
+    await dbRun('DELETE FROM speech_config');
+
+    await dbRun(`
+      INSERT INTO speech_config (tts_config, stt_config, updated_at)
+      VALUES (?, ?, ?)
+    `, [
+      JSON.stringify(tts),
+      JSON.stringify(stt),
+      updatedAt || new Date().toISOString()
+    ]);
+  }
+
+  // 更新语音服务配置
+  static async updateSpeechConfiguration(configData: any) {
+    const { tts, stt } = configData;
+
+    const existingConfig = await dbGet('SELECT id FROM speech_config ORDER BY updated_at DESC LIMIT 1');
+
+    if (existingConfig) {
+      await dbRun(`
+        UPDATE speech_config
+        SET tts_config = ?, stt_config = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [
+        JSON.stringify(tts),
+        JSON.stringify(stt),
+        existingConfig.id
+      ]);
+    } else {
+      // 如果没有现有配置，创建新配置
+      await this.saveSpeechConfiguration(configData);
+    }
   }
 }

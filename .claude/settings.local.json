@@ -46,7 +46,19 @@
       "Bash(curl \"http://localhost:3003/api/chats/sessions\")",
       "Bash(curl -X POST \"http://localhost:8080/api/ai/chat\" -H \"Content-Type: application/json\" -d \"{\"\"character_id\"\":1,\"\"session_id\"\":\"\"3def7d2f-77da-4f54-8599-2193f1ea50a1\"\",\"\"message\"\":\"\"你好，哈利！\"\"}\")",
       "Bash(curl -X POST \"http://localhost:8080/api/chats/sessions/cleanup\")",
-      "Bash(curl -X DELETE \"http://localhost:8080/api/chats/sessions/0aecb54d-0fd2-4b40-aa50-484204e2f264\")"
+      "Bash(curl -X DELETE \"http://localhost:8080/api/chats/sessions/0aecb54d-0fd2-4b40-aa50-484204e2f264\")",
+      "Bash(dir \"C:\\Users\\1\\Desktop\\QINIUYUN\\QiNiuYun\\server\\src\" /B)",
+      "Bash(npm install form-data)",
+      "Bash(curl \"http://localhost:8080/api/ai/speech/config\")",
+      "Bash(curl -X POST \"http://localhost:8080/api/ai/speech/config\" -H \"Content-Type: application/json\" -d '{\"\"tts\"\":{\"\"currentProvider\"\":\"\"elevenlabs\"\",\"\"providers\"\":{\"\"elevenlabs\"\":{\"\"apiKey\"\":\"\"test-key\"\",\"\"voiceId\"\":\"\"21m00Tcm4TlvDq8ikWAM\"\"}}},\"\"stt\"\":{\"\"currentProvider\"\":\"\"openai\"\",\"\"providers\"\":{\"\"openai\"\":{\"\"apiKey\"\":\"\"test-stt-key\"\"}}}}')",
+      "Bash(curl \"http://localhost:11434/api/tags\" -w \"\\nHTTP Status: %{http_code}\\n\")",
+      "Bash(curl -X POST \"http://localhost:8080/api/ai/test-connection\" -H \"Content-Type: application/json\" -d '{\"\"provider\"\":\"\"ollama\"\",\"\"config\"\":{\"\"baseURL\"\":\"\"http://localhost:11434\"\",\"\"model\"\":\"\"llama3.1:8b\"\"}}')",
+      "Bash(curl \"http://localhost:8080/api/ai/config\")",
+      "Bash(curl -X POST \"http://localhost:8080/api/ai/chat\" -H \"Content-Type: application/json\" -d '{\"\"character_id\"\":1,\"\"message\"\":\"\"你好，请简单介绍一下你自己\"\"}')",
+      "Bash(curl -X POST \"http://localhost:11434/api/generate\" -H \"Content-Type: application/json\" -d '{\"\"model\"\":\"\"llama3.1:8b\"\",\"\"prompt\"\":\"\"你好，请简单介绍一下你自己\"\",\"\"stream\"\":false}' --max-time 30)",
+      "Bash(curl -X POST \"http://localhost:11434/api/generate\" -H \"Content-Type: application/json\" -d '{\"\"model\"\":\"\"llama3.1:8b\"\",\"\"prompt\"\":\"\"Hello, please introduce yourself briefly\"\",\"\"stream\"\":false}' --max-time 30)",
+      "Bash(curl -X POST \"http://localhost:8080/api/ai/chat\" -H \"Content-Type: application/json\" -d '{\"\"character_id\"\":1,\"\"message\"\":\"\"Hello, could you introduce yourself?\"\"}')",
+      "Bash(curl -X POST \"http://localhost:8080/api/ai/chat\" -H \"Content-Type: application/json\" -d '{\"\"character_id\"\":1,\"\"message\"\":\"\"你能告诉我关于魔法世界的事情吗？\"\"}')"
     ],
     "deny": [],
     "ask": []

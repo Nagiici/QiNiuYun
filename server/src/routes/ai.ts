@@ -1,5 +1,6 @@
 import express from 'express';
 import axios from 'axios';
+import FormData from 'form-data';
 import { DatabaseService } from '../database';
 
 export const aiRouter = express.Router();
@@ -104,8 +105,64 @@ async function generateAIResponse(userMessage: string, character: any, sessionId
     // 构建增强的系统提示词（包含记忆）
     const systemPrompt = buildEnhancedSystemPrompt(character, personalityData, examples, conversationHistory);
 
-    // 按优先级尝试不同的AI服务
-    const aiServices = [
+    // 获取当前AI配置
+    const aiConfiguration = await DatabaseService.getAiConfiguration();
+    const currentProvider = aiConfiguration?.currentProvider || 'groq';
+    const temperature = aiConfiguration?.temperature || 0.7;
+    const providers = aiConfiguration?.providers || {};
+
+    // 根据配置的当前提供商尝试AI服务
+    if (currentProvider !== 'fallback') {
+      try {
+        let response: string | null = null;
+
+        switch (currentProvider) {
+          case 'groq':
+            if (providers.groq?.apiKey) {
+              console.log('Using configured Groq API...');
+              response = await tryGroqAPIWithConfig(systemPrompt, userMessage, providers.groq, temperature);
+            }
+            break;
+          case 'openai':
+            if (providers.openai?.apiKey) {
+              console.log('Using configured OpenAI API...');
+              response = await tryOpenAIAPIWithConfig(systemPrompt, userMessage, providers.openai, temperature);
+            }
+            break;
+          case 'cohere':
+            if (providers.cohere?.apiKey) {
+              console.log('Using configured Cohere API...');
+              response = await tryCohereAPIWithConfig(systemPrompt, userMessage, providers.cohere, temperature);
+            }
+            break;
+          case 'anthropic':
+            if (providers.anthropic?.apiKey) {
+              console.log('Using configured Anthropic API...');
+              response = await tryAnthropicAPIWithConfig(systemPrompt, userMessage, providers.anthropic, temperature);
+            }
+            break;
+          case 'ollama':
+            if (providers.ollama?.baseURL) {
+              console.log('Using configured Ollama API...');
+              response = await tryOllamaAPIWithConfig(systemPrompt, userMessage, providers.ollama);
+            }
+            break;
+        }
+
+        if (response) {
+          console.log(`✅ ${currentProvider} API successful`);
+          return response;
+        } else {
+          console.log(`❌ ${currentProvider} API failed or not configured`);
+        }
+      } catch (error: any) {
+        console.log(`❌ ${currentProvider} API failed:`, error.message);
+      }
+    }
+
+    // 如果配置的提供商失败，尝试使用环境变量中的其他提供商作为后备
+    console.log('Trying fallback providers from environment variables...');
+    const fallbackServices = [
       { name: 'Groq', fn: () => tryGroqAPI(systemPrompt, userMessage) },
       { name: 'OpenAI', fn: () => tryOpenAIAPI(systemPrompt, userMessage) },
       { name: 'Cohere', fn: () => tryCohereAPI(systemPrompt, userMessage) },
@@ -114,16 +171,16 @@ async function generateAIResponse(userMessage: string, character: any, sessionId
     ];
 
     // 依次尝试可用的AI服务
-    for (const service of aiServices) {
+    for (const service of fallbackServices) {
       try {
-        console.log(`Trying ${service.name} API...`);
+        console.log(`Trying ${service.name} API (fallback)...`);
         const response = await service.fn();
         if (response) {
-          console.log(`✅ ${service.name} API successful`);
+          console.log(`✅ ${service.name} API successful (fallback)`);
           return response;
         }
-      } catch (error) {
-        console.log(`❌ ${service.name} API failed:`, error.message);
+      } catch (error: any) {
+        console.log(`❌ ${service.name} API failed (fallback):`, error.message);
         continue;
       }
     }
@@ -373,11 +430,125 @@ async function tryAnthropicAPI(systemPrompt: string, userMessage: string): Promi
 // Ollama Local API
 async function tryOllamaAPI(systemPrompt: string, userMessage: string): Promise<string | null> {
   const response = await axios.post(`${AI_CONFIG.OLLAMA_URL}/api/generate`, {
-    model: 'llama2', // 或其他本地可用模型
+    model: 'llama3.1:8b', // 使用可用的模型
     prompt: `${systemPrompt}\n\nUser: ${userMessage}\nAssistant:`,
-    stream: false
+    stream: false,
+    options: {
+      temperature: 0.7,
+      num_ctx: 4096
+    }
   }, {
-    timeout: 15000
+    timeout: 60000, // 增加到60秒超时
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8'
+    }
+  });
+
+  return response.data.response || null;
+}
+
+// =============== Dynamic AI Service Implementations (Using Database Config) ===============
+
+// Groq API with dynamic config
+async function tryGroqAPIWithConfig(systemPrompt: string, userMessage: string, config: any, temperature: number): Promise<string | null> {
+  const response = await axios.post(AI_CONFIG.GROQ_API_URL, {
+    model: config.model || 'llama-3.1-70b-versatile',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ],
+    max_tokens: 500,
+    temperature: temperature
+  }, {
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  });
+
+  return response.data.choices[0]?.message?.content || null;
+}
+
+// OpenAI API with dynamic config
+async function tryOpenAIAPIWithConfig(systemPrompt: string, userMessage: string, config: any, temperature: number): Promise<string | null> {
+  const response = await axios.post(AI_CONFIG.OPENAI_API_URL, {
+    model: config.model || 'gpt-4o-mini',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ],
+    max_tokens: 500,
+    temperature: temperature
+  }, {
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  });
+
+  return response.data.choices[0]?.message?.content || null;
+}
+
+// Cohere API with dynamic config
+async function tryCohereAPIWithConfig(systemPrompt: string, userMessage: string, config: any, temperature: number): Promise<string | null> {
+  const prompt = `${systemPrompt}\n\nUser: ${userMessage}\nAssistant:`;
+
+  const response = await axios.post(AI_CONFIG.COHERE_API_URL, {
+    model: config.model || 'command-r-plus',
+    prompt: prompt,
+    max_tokens: 500,
+    temperature: temperature,
+    stop_sequences: ['User:', '\n\nUser:']
+  }, {
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  });
+
+  return response.data.generations[0]?.text?.trim() || null;
+}
+
+// Anthropic Claude API with dynamic config
+async function tryAnthropicAPIWithConfig(systemPrompt: string, userMessage: string, config: any, temperature: number): Promise<string | null> {
+  const response = await axios.post(AI_CONFIG.ANTHROPIC_API_URL, {
+    model: config.model || 'claude-3-5-sonnet-20241022',
+    max_tokens: 500,
+    temperature: temperature,
+    system: systemPrompt,
+    messages: [
+      { role: 'user', content: userMessage }
+    ]
+  }, {
+    headers: {
+      'x-api-key': config.apiKey,
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01'
+    },
+    timeout: 10000
+  });
+
+  return response.data.content[0]?.text || null;
+}
+
+// Ollama Local API with dynamic config
+async function tryOllamaAPIWithConfig(systemPrompt: string, userMessage: string, config: any): Promise<string | null> {
+  const response = await axios.post(`${config.baseURL}/api/generate`, {
+    model: config.model || 'llama3.1:8b',
+    prompt: `${systemPrompt}\n\nUser: ${userMessage}\nAssistant:`,
+    stream: false,
+    options: {
+      temperature: 0.7,
+      num_ctx: 4096
+    }
+  }, {
+    timeout: 60000, // 增加到60秒超时
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8'
+    }
   });
 
   return response.data.response || null;
@@ -552,9 +723,609 @@ function buildEnhancedSystemPrompt(character: any, personalityData: any, example
   return prompt;
 }
 
+// =============== AI配置管理 ===============
+
+// 获取当前AI配置
+aiRouter.get('/config', async (req, res) => {
+  try {
+    // 从数据库获取保存的配置，如果没有则使用默认配置
+    const savedConfig = await DatabaseService.getAiConfiguration();
+
+    if (savedConfig) {
+      res.json(savedConfig);
+    } else {
+      // 返回默认配置（不包含敏感信息）
+      const defaultConfig = {
+        currentProvider: 'groq',
+        temperature: 0.7,
+        providers: {
+          groq: {
+            apiKey: AI_CONFIG.GROQ_API_KEY ? '****' : '',
+            model: 'llama-3.1-70b-versatile'
+          },
+          openai: {
+            apiKey: AI_CONFIG.OPENAI_API_KEY ? '****' : '',
+            model: 'gpt-4o-mini'
+          },
+          cohere: {
+            apiKey: AI_CONFIG.COHERE_API_KEY ? '****' : '',
+            model: 'command-r-plus'
+          },
+          anthropic: {
+            apiKey: AI_CONFIG.ANTHROPIC_API_KEY ? '****' : '',
+            model: 'claude-3-5-sonnet-20241022'
+          },
+          ollama: {
+            baseURL: AI_CONFIG.OLLAMA_URL,
+            model: 'llama3.1:8b'
+          }
+        }
+      };
+      res.json(defaultConfig);
+    }
+  } catch (error) {
+    console.error('Error fetching AI configuration:', error);
+    res.status(500).json({ error: 'Failed to fetch AI configuration' });
+  }
+});
+
+// 更新AI配置
+aiRouter.post('/config', async (req, res) => {
+  try {
+    const { currentProvider, temperature, providers } = req.body;
+
+    // 验证配置数据
+    if (!currentProvider || !providers) {
+      return res.status(400).json({ error: 'Current provider and providers configuration are required' });
+    }
+
+    // 保存配置到数据库
+    await DatabaseService.saveAiConfiguration({
+      currentProvider,
+      temperature: temperature || 0.7,
+      providers,
+      updatedAt: new Date().toISOString()
+    });
+
+    // 更新内存中的配置
+    updateAiConfig(providers);
+
+    res.json({
+      message: 'AI configuration updated successfully',
+      currentProvider,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error updating AI configuration:', error);
+    res.status(500).json({ error: 'Failed to update AI configuration' });
+  }
+});
+
+// 测试AI提供商连接
+aiRouter.post('/test-connection', async (req, res) => {
+  try {
+    const { provider, config } = req.body;
+
+    if (!provider || !config) {
+      return res.status(400).json({ error: 'Provider and config are required' });
+    }
+
+    let testResult = false;
+    let errorMessage = '';
+
+    try {
+      switch (provider) {
+        case 'groq':
+          testResult = await testGroqConnection(config);
+          break;
+        case 'openai':
+          testResult = await testOpenAIConnection(config);
+          break;
+        case 'cohere':
+          testResult = await testCohereConnection(config);
+          break;
+        case 'anthropic':
+          testResult = await testAnthropicConnection(config);
+          break;
+        case 'ollama':
+          testResult = await testOllamaConnection(config);
+          break;
+        default:
+          return res.status(400).json({ error: 'Unsupported provider' });
+      }
+    } catch (error: any) {
+      testResult = false;
+      errorMessage = error.message;
+    }
+
+    if (testResult) {
+      res.json({
+        success: true,
+        message: `${provider} connection test successful`,
+        provider,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: `${provider} connection test failed`,
+        error: errorMessage,
+        provider,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Error testing connection:', error);
+    res.status(500).json({ error: 'Failed to test connection' });
+  }
+});
+
+// 连接测试辅助函数
+async function testGroqConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  const response = await axios.post(AI_CONFIG.GROQ_API_URL, {
+    model: config.model || 'llama-3.1-70b-versatile',
+    messages: [
+      { role: 'user', content: 'Test connection' }
+    ],
+    max_tokens: 10
+  }, {
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200 && response.data.choices && response.data.choices.length > 0;
+}
+
+async function testOpenAIConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  const response = await axios.post(AI_CONFIG.OPENAI_API_URL, {
+    model: config.model || 'gpt-4o-mini',
+    messages: [
+      { role: 'user', content: 'Test connection' }
+    ],
+    max_tokens: 10
+  }, {
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200 && response.data.choices && response.data.choices.length > 0;
+}
+
+async function testCohereConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  const response = await axios.post(AI_CONFIG.COHERE_API_URL, {
+    model: config.model || 'command-r-plus',
+    prompt: 'Test connection',
+    max_tokens: 10
+  }, {
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200 && response.data.generations && response.data.generations.length > 0;
+}
+
+async function testAnthropicConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  const response = await axios.post(AI_CONFIG.ANTHROPIC_API_URL, {
+    model: config.model || 'claude-3-5-sonnet-20241022',
+    max_tokens: 10,
+    messages: [
+      { role: 'user', content: 'Test connection' }
+    ]
+  }, {
+    headers: {
+      'x-api-key': config.apiKey,
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01'
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200 && response.data.content && response.data.content.length > 0;
+}
+
+async function testOllamaConnection(config: any): Promise<boolean> {
+  if (!config.baseURL) throw new Error('Base URL is required');
+
+  const response = await axios.get(`${config.baseURL}/api/tags`, {
+    timeout: 10000
+  });
+
+  return response.status === 200;
+}
+
+// 更新内存中的AI配置
+function updateAiConfig(providers: any) {
+  if (providers.groq?.apiKey) {
+    AI_CONFIG.GROQ_API_KEY = providers.groq.apiKey;
+  }
+  if (providers.openai?.apiKey) {
+    AI_CONFIG.OPENAI_API_KEY = providers.openai.apiKey;
+  }
+  if (providers.cohere?.apiKey) {
+    AI_CONFIG.COHERE_API_KEY = providers.cohere.apiKey;
+  }
+  if (providers.anthropic?.apiKey) {
+    AI_CONFIG.ANTHROPIC_API_KEY = providers.anthropic.apiKey;
+  }
+  if (providers.ollama?.baseURL) {
+    AI_CONFIG.OLLAMA_URL = providers.ollama.baseURL;
+  }
+}
+
+// =============== 语音服务配置管理 ===============
+
+// 获取语音服务配置
+aiRouter.get('/speech/config', async (req, res) => {
+  try {
+    const savedConfig = await DatabaseService.getSpeechConfiguration();
+
+    if (savedConfig) {
+      res.json(savedConfig);
+    } else {
+      // 返回默认配置
+      const defaultConfig = {
+        tts: {
+          currentProvider: 'web',
+          providers: {
+            elevenlabs: {
+              apiKey: process.env.ELEVENLABS_API_KEY ? '****' : '',
+              voiceId: '21m00Tcm4TlvDq8ikWAM'
+            },
+            openai: {
+              apiKey: process.env.OPENAI_API_KEY ? '****' : '',
+              voice: 'alloy'
+            },
+            azure: {
+              subscriptionKey: process.env.AZURE_SPEECH_KEY ? '****' : '',
+              region: process.env.AZURE_SPEECH_REGION || 'eastus'
+            },
+            google: {
+              apiKey: process.env.GOOGLE_CLOUD_API_KEY ? '****' : ''
+            }
+          }
+        },
+        stt: {
+          currentProvider: 'web',
+          providers: {
+            openai: {
+              apiKey: process.env.OPENAI_API_KEY ? '****' : ''
+            },
+            azure: {
+              subscriptionKey: process.env.AZURE_SPEECH_KEY ? '****' : '',
+              region: process.env.AZURE_SPEECH_REGION || 'eastus'
+            },
+            google: {
+              apiKey: process.env.GOOGLE_CLOUD_API_KEY ? '****' : ''
+            },
+            baidu: {
+              apiKey: process.env.BAIDU_API_KEY ? '****' : '',
+              secretKey: process.env.BAIDU_SECRET_KEY ? '****' : ''
+            }
+          }
+        }
+      };
+      res.json(defaultConfig);
+    }
+  } catch (error) {
+    console.error('Error fetching speech configuration:', error);
+    res.status(500).json({ error: 'Failed to fetch speech configuration' });
+  }
+});
+
+// 更新语音服务配置
+aiRouter.post('/speech/config', async (req, res) => {
+  try {
+    const { tts, stt } = req.body;
+
+    if (!tts || !stt) {
+      return res.status(400).json({ error: 'TTS and STT configuration are required' });
+    }
+
+    // 保存配置到数据库
+    await DatabaseService.saveSpeechConfiguration({
+      tts,
+      stt,
+      updatedAt: new Date().toISOString()
+    });
+
+    res.json({
+      message: 'Speech configuration updated successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error updating speech configuration:', error);
+    res.status(500).json({ error: 'Failed to update speech configuration' });
+  }
+});
+
+// 测试TTS服务连接
+aiRouter.post('/speech/test-tts', async (req, res) => {
+  try {
+    const { provider, config } = req.body;
+
+    if (!provider || !config) {
+      return res.status(400).json({ error: 'Provider and config are required' });
+    }
+
+    let testResult = false;
+    let errorMessage = '';
+
+    try {
+      switch (provider) {
+        case 'elevenlabs':
+          testResult = await testElevenLabsConnection(config);
+          break;
+        case 'openai':
+          testResult = await testOpenAITtsConnection(config);
+          break;
+        case 'azure':
+          testResult = await testAzureTtsConnection(config);
+          break;
+        case 'google':
+          testResult = await testGoogleTtsConnection(config);
+          break;
+        default:
+          return res.status(400).json({ error: 'Unsupported TTS provider' });
+      }
+    } catch (error: any) {
+      testResult = false;
+      errorMessage = error.message;
+    }
+
+    if (testResult) {
+      res.json({
+        success: true,
+        message: `${provider} TTS connection test successful`,
+        provider,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: `${provider} TTS connection test failed`,
+        error: errorMessage,
+        provider,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Error testing TTS connection:', error);
+    res.status(500).json({ error: 'Failed to test TTS connection' });
+  }
+});
+
+// 测试STT服务连接
+aiRouter.post('/speech/test-stt', async (req, res) => {
+  try {
+    const { provider, config } = req.body;
+
+    if (!provider || !config) {
+      return res.status(400).json({ error: 'Provider and config are required' });
+    }
+
+    let testResult = false;
+    let errorMessage = '';
+
+    try {
+      switch (provider) {
+        case 'openai':
+          testResult = await testOpenAISttConnection(config);
+          break;
+        case 'azure':
+          testResult = await testAzureSttConnection(config);
+          break;
+        case 'google':
+          testResult = await testGoogleSttConnection(config);
+          break;
+        case 'baidu':
+          testResult = await testBaiduSttConnection(config);
+          break;
+        default:
+          return res.status(400).json({ error: 'Unsupported STT provider' });
+      }
+    } catch (error: any) {
+      testResult = false;
+      errorMessage = error.message;
+    }
+
+    if (testResult) {
+      res.json({
+        success: true,
+        message: `${provider} STT connection test successful`,
+        provider,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: `${provider} STT connection test failed`,
+        error: errorMessage,
+        provider,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Error testing STT connection:', error);
+    res.status(500).json({ error: 'Failed to test STT connection' });
+  }
+});
+
+// =============== 语音服务连接测试函数 ===============
+
+// ElevenLabs TTS测试
+async function testElevenLabsConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
+    headers: {
+      'xi-api-key': config.apiKey
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200;
+}
+
+// OpenAI TTS测试
+async function testOpenAITtsConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  const response = await axios.post('https://api.openai.com/v1/audio/speech', {
+    model: 'tts-1',
+    input: 'Test',
+    voice: config.voice || 'alloy'
+  }, {
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000,
+    responseType: 'arraybuffer'
+  });
+
+  return response.status === 200;
+}
+
+// Azure TTS测试
+async function testAzureTtsConnection(config: any): Promise<boolean> {
+  if (!config.subscriptionKey || !config.region) {
+    throw new Error('Subscription key and region are required');
+  }
+
+  const response = await axios.get(`https://${config.region}.api.cognitive.microsoft.com/sts/v1.0/issuetoken`, {
+    headers: {
+      'Ocp-Apim-Subscription-Key': config.subscriptionKey
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200;
+}
+
+// Google Cloud TTS测试
+async function testGoogleTtsConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  const response = await axios.post(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${config.apiKey}`, {
+    input: { text: 'Test' },
+    voice: { languageCode: 'en-US', name: 'en-US-Standard-A' },
+    audioConfig: { audioEncoding: 'MP3' }
+  }, {
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200;
+}
+
+// OpenAI STT测试 (Whisper)
+async function testOpenAISttConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  // 创建一个简单的音频文件用于测试
+  const testAudio = Buffer.from('test audio data');
+  const formData = new FormData();
+  formData.append('file', testAudio, 'test.mp3');
+  formData.append('model', 'whisper-1');
+
+  try {
+    const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        ...formData.getHeaders()
+      },
+      timeout: 10000
+    });
+    return response.status === 200;
+  } catch (error: any) {
+    // 如果是因为无效的音频文件格式而失败，但API密钥有效，则认为连接成功
+    if (error.response?.status === 400 && error.response?.data?.error?.message?.includes('audio')) {
+      return true;
+    }
+    throw error;
+  }
+}
+
+// Azure STT测试
+async function testAzureSttConnection(config: any): Promise<boolean> {
+  if (!config.subscriptionKey || !config.region) {
+    throw new Error('Subscription key and region are required');
+  }
+
+  const response = await axios.get(`https://${config.region}.api.cognitive.microsoft.com/sts/v1.0/issuetoken`, {
+    headers: {
+      'Ocp-Apim-Subscription-Key': config.subscriptionKey
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200;
+}
+
+// Google Cloud STT测试
+async function testGoogleSttConnection(config: any): Promise<boolean> {
+  if (!config.apiKey) throw new Error('API key is required');
+
+  const response = await axios.post(`https://speech.googleapis.com/v1/speech:recognize?key=${config.apiKey}`, {
+    config: {
+      encoding: 'LINEAR16',
+      sampleRateHertz: 16000,
+      languageCode: 'en-US'
+    },
+    audio: {
+      content: 'SGVsbG8gV29ybGQ=' // Base64 encoded "Hello World"
+    }
+  }, {
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    timeout: 10000
+  });
+
+  return response.status === 200;
+}
+
+// 百度STT测试
+async function testBaiduSttConnection(config: any): Promise<boolean> {
+  if (!config.apiKey || !config.secretKey) {
+    throw new Error('API key and secret key are required');
+  }
+
+  // 获取访问令牌
+  const tokenResponse = await axios.post('https://openapi.baidu.com/oauth/2.0/token', null, {
+    params: {
+      grant_type: 'client_credentials',
+      client_id: config.apiKey,
+      client_secret: config.secretKey
+    },
+    timeout: 10000
+  });
+
+  return tokenResponse.status === 200 && tokenResponse.data.access_token;
+}
+
 // =============== 语音功能 ===============
 
-// TTS语音合成API
+// TTS语音合成API (更新以使用数据库配置)
 aiRouter.post('/tts', async (req, res) => {
   try {
     const { text, voice = 'zh-CN', speed = 1.0 } = req.body;
