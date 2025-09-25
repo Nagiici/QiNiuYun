@@ -232,7 +232,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useChatStore, type ChatMessage } from '@/stores/chat';
 import { useCharactersStore } from '@/stores/characters';
@@ -428,19 +428,30 @@ const initializeChat = async () => {
     try {
       globalStore.setLoading(true, '正在加载角色信息...');
 
+      // 清空消息输入框，避免重复消息显示
+      newMessage.value = '';
+
       // 获取角色信息
       const character = await charactersStore.fetchCharacterById(Number(characterId));
       globalStore.setCurrentCharacter(character);
 
-      // 检查是否有现有会话
-      const existingSession = chatStore.sessions.find(s => s.character_id === Number(characterId));
-
-      if (existingSession) {
-        // 加载现有会话
-        await chatStore.loadSessionMessages(existingSession.id);
+      // 检查是否已经有当前会话且消息已加载（避免重复加载）
+      if (chatStore.currentSession &&
+          chatStore.currentSession.character_id === Number(characterId) &&
+          chatStore.messages.length > 0) {
+        // 已有会话数据，无需重新加载
+        console.log('Session already loaded, skipping reload');
       } else {
-        // 创建新会话
-        await chatStore.createSession(Number(characterId), character.name);
+        // 检查是否有现有会话
+        const existingSession = chatStore.sessions.find(s => s.character_id === Number(characterId));
+
+        if (existingSession) {
+          // 如果找到现有会话，加载该会话的消息
+          await chatStore.loadSessionMessages(existingSession.id);
+        } else {
+          // 创建新会话
+          await chatStore.createSession(Number(characterId), character.name);
+        }
       }
     } catch (error) {
       console.error('Failed to initialize chat:', error);
@@ -454,6 +465,13 @@ const initializeChat = async () => {
   // 自动滚动到底部
   scrollToBottom();
 };
+
+// 监听路由参数变化，当角色ID变化时重新初始化聊天
+watch(() => route.params.characterId, async (newCharacterId, oldCharacterId) => {
+  if (newCharacterId && newCharacterId !== oldCharacterId) {
+    await initializeChat();
+  }
+});
 
 // 生命周期
 onMounted(async () => {

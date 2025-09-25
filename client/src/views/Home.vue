@@ -144,12 +144,34 @@
                     </p>
                     <div class="card-actions justify-between items-center mt-4">
                       <div class="badge badge-secondary badge-sm">{{ getCharacterType(character) }}</div>
-                      <button
-                        class="btn btn-primary btn-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                        @click.stop="quickChat(character)"
-                      >
-                        快速对话
-                      </button>
+                      <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          class="btn btn-primary btn-sm"
+                          @click.stop="quickChat(character)"
+                        >
+                          快速对话
+                        </button>
+                        <button
+                          v-if="!isPresetCharacter(character)"
+                          class="btn btn-ghost btn-sm"
+                          @click.stop="editCharacter(character)"
+                          title="编辑角色"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          v-if="!isPresetCharacter(character)"
+                          class="btn btn-error btn-sm"
+                          @click.stop="deleteCharacter(character)"
+                          title="删除角色"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -220,15 +242,37 @@
                     </p>
                     <div class="card-actions justify-between items-center">
                       <div class="badge badge-secondary badge-sm">{{ getCharacterType(character) }}</div>
-                      <button
-                        class="btn btn-primary btn-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                        @click.stop="quickChat(character)"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
-                        </svg>
-                        快速对话
-                      </button>
+                      <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          class="btn btn-primary btn-sm"
+                          @click.stop="quickChat(character)"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
+                          </svg>
+                          快速对话
+                        </button>
+                        <button
+                          v-if="!isPresetCharacter(character)"
+                          class="btn btn-ghost btn-sm"
+                          @click.stop="editCharacter(character)"
+                          title="编辑角色"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          v-if="!isPresetCharacter(character)"
+                          class="btn btn-error btn-sm"
+                          @click.stop="deleteCharacter(character)"
+                          title="删除角色"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -386,7 +430,52 @@ const getCharacterType = (character: any) => {
   return typeMap[preset] || '角色';
 };
 
+// 判断是否为预设角色（ID为1,2,3的是预设角色）
+const isPresetCharacter = (character: any) => {
+  const presetIds = [1, 2, 3];
+  return presetIds.includes(character.id);
+};
+
+// 删除角色
+const deleteCharacter = async (character: any) => {
+  if (isPresetCharacter(character)) {
+    globalStore.showNotification('预设角色无法删除', 'warning');
+    return;
+  }
+
+  if (confirm(`确定要删除角色"${character.name}"吗？此操作不可撤销，将同时删除相关的聊天记录。`)) {
+    try {
+      globalStore.setLoading(true, '正在删除角色...');
+
+      await charactersStore.deleteCharacter(character.id);
+
+      globalStore.showNotification('角色删除成功', 'success');
+
+      // 重新加载角色列表
+      await charactersStore.fetchCharacters();
+    } catch (error) {
+      console.error('Failed to delete character:', error);
+      globalStore.showNotification('删除角色失败，请重试', 'error');
+    } finally {
+      globalStore.setLoading(false);
+    }
+  }
+};
+
+// 编辑角色
+const editCharacter = (character: any) => {
+  if (isPresetCharacter(character)) {
+    globalStore.showNotification('预设角色无法编辑', 'warning');
+    return;
+  }
+
+  // 导航到创建角色页面，传递角色ID用于编辑模式
+  router.push(`/create?edit=${character.id}`);
+};
+
 const selectCharacter = (character: any) => {
+  // 清理当前会话数据，避免数据混乱
+  chatStore.clearCurrentSession();
   globalStore.setCurrentCharacter(character);
   router.push(`/chat/${character.id}`);
 };

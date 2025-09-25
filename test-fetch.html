@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Character Test</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>Testing Character Edit Functionality</h1>
+
+    <div id="status">Loading...</div>
+    <div id="characterData"></div>
+
+    <script>
+        // Simulate what happens when CreateCharacter.vue loads
+        const characterId = 12;
+
+        fetch(`http://localhost:8080/api/characters/${characterId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(character => {
+                document.getElementById('status').innerHTML = 'Character data loaded successfully!';
+                document.getElementById('characterData').innerHTML =
+                    `<h2>Character Details:</h2>
+                     <p><strong>ID:</strong> ${character.id}</p>
+                     <p><strong>Name:</strong> ${character.name}</p>
+                     <p><strong>Description:</strong> ${character.description}</p>
+                     <p><strong>Personality Preset:</strong> ${character.personality_preset || 'Not set'}</p>`;
+            })
+            .catch(error => {
+                document.getElementById('status').innerHTML = 'Error loading character: ' + error.message;
+                console.error('Error:', error);
+            });
+    </script>
+</body>
+</html>

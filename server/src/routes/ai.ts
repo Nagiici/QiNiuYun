@@ -28,23 +28,30 @@ const AI_CONFIG = {
 // AI对话生成
 aiRouter.post('/chat', async (req, res) => {
   try {
-    const { message, character_id, session_id } = req.body;
+    const { message, character_id, session_id, character_data } = req.body;
 
     if (!message || !character_id) {
       return res.status(400).json({ error: 'Message and character_id are required' });
     }
 
-    // 获取角色信息
-    const character = await DatabaseService.getCharacterById(character_id);
-    if (!character) {
-      return res.status(404).json({ error: 'Character not found' });
+    let character;
+
+    // 如果character_id是999且提供了character_data，使用临时角色数据（用于测试预览）
+    if (character_id === 999 && character_data) {
+      character = character_data;
+    } else {
+      // 获取数据库中的角色信息
+      character = await DatabaseService.getCharacterById(character_id);
+      if (!character) {
+        return res.status(404).json({ error: 'Character not found' });
+      }
     }
 
     // 构建AI提示词（包含会话ID以支持记忆功能）
     const aiResponse = await generateAIResponse(message, character, session_id);
 
-    // 保存用户消息和AI回复
-    if (session_id) {
+    // 只有正常聊天时才保存消息（测试预览时不保存）
+    if (session_id && character_id !== 999) {
       await DatabaseService.addChatMessage(session_id, 'user', message, 'text');
       await DatabaseService.addChatMessage(session_id, 'ai', aiResponse, 'text');
     }
@@ -197,8 +204,38 @@ async function generateAIResponse(userMessage: string, character: any, sessionId
 function buildSystemPrompt(character: any, personalityData: any, examples: any[]): string {
   let prompt = `你是${character.name}。${character.description}\n\n`;
 
+  // 沉浸式世界设定
+  if (character.story_world) {
+    prompt += `=== 世界环境 ===\n你所处的世界：${character.story_world}\n\n`;
+  }
+
+  if (character.character_background) {
+    prompt += `=== 角色背景 ===\n${character.character_background}\n\n`;
+  }
+
   if (character.story_background) {
     prompt += `背景故事：${character.story_background}\n\n`;
+  }
+
+  // 当前任务和情境
+  if (character.has_mission && character.current_mission) {
+    prompt += `=== 当前任务 ===\n${character.current_mission}\n\n`;
+  }
+
+  if (character.current_mood) {
+    const moodMap = {
+      happy: '开心愉悦', sad: '悲伤沮丧', angry: '愤怒生气', excited: '兴奋激动',
+      nervous: '紧张不安', calm: '平静冷静', confused: '困惑迷茫', determined: '坚定果断'
+    };
+    prompt += `=== 情绪状态 ===\n当前情绪：${moodMap[character.current_mood as keyof typeof moodMap] || character.current_mood}\n\n`;
+  }
+
+  if (character.time_setting) {
+    const timeMap = {
+      morning: '清晨', noon: '正午', afternoon: '下午',
+      evening: '傍晚', night: '夜晚', midnight: '深夜'
+    };
+    prompt += `=== 时间设定 ===\n当前时间：${timeMap[character.time_setting as keyof typeof timeMap] || character.time_setting}\n\n`;
   }
 
   if (character.custom_instructions) {
@@ -647,12 +684,96 @@ function enhancedEmotionAnalysis(message: string): { emotion: string, intensity:
 function buildEnhancedSystemPrompt(character: any, personalityData: any, examples: any[], conversationHistory: string): string {
   let prompt = `你是${character.name}。${character.description}\n\n`;
 
+  // 沉浸式世界设定
+  if (character.story_world) {
+    prompt += `=== 世界环境设定 ===\n你目前所处的世界环境：${character.story_world}\n请在对话中体现这个世界的特色和氛围。\n\n`;
+  }
+
+  if (character.character_background) {
+    prompt += `=== 角色详细背景 ===\n${character.character_background}\n这些经历塑造了你的性格和世界观。\n\n`;
+  }
+
   if (character.story_background) {
-    prompt += `背景故事：${character.story_background}\n\n`;
+    prompt += `=== 背景故事 ===\n${character.story_background}\n\n`;
+  }
+
+  // 当前状态和情境设定
+  if (character.has_mission && character.current_mission) {
+    prompt += `=== 当前任务/目标 ===\n你当前的任务或目标：${character.current_mission}\n重要提示：这个任务会影响你的对话重点、行为动机和情感状态。在对话中要体现出对这个任务的关注。\n\n`;
+  }
+
+  if (character.current_mood) {
+    const moodDescriptions = {
+      happy: '开心愉悦 - 你现在心情很好，语气轻松积极，容易表现出兴奋和满足感',
+      sad: '悲伤沮丧 - 你现在情绪低落，语气可能有些沉重，容易表现出失落和忧郁',
+      angry: '愤怒生气 - 你现在有些愤怒，语气可能有些急躁，容易表现出不耐烦或激动',
+      excited: '兴奋激动 - 你现在非常兴奋，语气充满活力，容易表现出热情和期待',
+      nervous: '紧张不安 - 你现在有些紧张，语气可能有些急促或犹豫，容易表现出担忧',
+      calm: '平静冷静 - 你现在很平静，语气沉稳从容，表现出理性和淡定',
+      confused: '困惑迷茫 - 你现在有些困惑，语气可能犹豫不定，容易表现出不确定和疑问',
+      determined: '坚定果断 - 你现在意志坚定，语气坚决有力，表现出强烈的决心和意志力'
+    };
+    const moodDesc = moodDescriptions[character.current_mood as keyof typeof moodDescriptions];
+    if (moodDesc) {
+      prompt += `=== 当前情绪状态 ===\n${moodDesc}\n请在对话中自然地体现这种情绪，但不要过分夸张。\n\n`;
+    }
+  }
+
+  // 时间设定 - 支持实时时间或固定时间
+  let currentTimeSetting = character.time_setting;
+  let timeContext = '';
+
+  // 确保正确处理布尔值（SQLite可能返回1/0而不是true/false）
+  const useRealTime = Boolean(character.use_real_time);
+
+  if (useRealTime) {
+    // 使用实时时间
+    const now = new Date();
+    const hour = now.getHours();
+    const currentTime = now.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      weekday: 'long'
+    });
+
+    // 根据真实时间确定时间段
+    if (hour >= 5 && hour < 12) {
+      currentTimeSetting = 'morning';
+    } else if (hour >= 12 && hour < 18) {
+      currentTimeSetting = 'afternoon';
+    } else if (hour >= 18 && hour < 22) {
+      currentTimeSetting = 'evening';
+    } else {
+      currentTimeSetting = 'night';
+    }
+
+    timeContext = `当前真实时间：${currentTime}`;
+  }
+
+  if (currentTimeSetting) {
+    const timeDescriptions = {
+      morning: '清晨 - 这是新一天的开始，你可能带有朝气和对新事物的期待，或者还有些困倦',
+      noon: '正午 - 现在是一天的中段，你精力充沛，思维清晰',
+      afternoon: '下午 - 下午时光，你可能稍显慵懒或正忙碌于各种事务',
+      evening: '傍晚 - 一天即将结束，你可能有些疲惫但也感到轻松',
+      night: '夜晚 - 安静的夜晚时光，适合深入的思考和交流',
+      midnight: '深夜 - 静谧的深夜时刻，你可能更加内省和深沉'
+    };
+    const timeDesc = timeDescriptions[currentTimeSetting as keyof typeof timeDescriptions];
+    if (timeDesc) {
+      prompt += `=== 时间设定 ===\n`;
+      if (timeContext) {
+        prompt += `${timeContext}\n`;
+      }
+      prompt += `现在是${timeDesc}\n请考虑这个时间设定对你的状态和对话氛围的影响。\n\n`;
+    }
   }
 
   if (character.custom_instructions) {
-    prompt += `特殊指令：${character.custom_instructions}\n\n`;
+    prompt += `=== 特殊行为指令 ===\n${character.custom_instructions}\n请严格遵循这些指令。\n\n`;
   }
 
   // 技能1: 个性化对话 - 详细的性格特征描述

@@ -12,13 +12,13 @@
               主页
             </router-link>
           </li>
-          <li><span class="text-base-content/60">创建人物</span></li>
+          <li><span class="text-base-content/60">{{ editMode ? '编辑人物' : '创建人物' }}</span></li>
         </ul>
       </div>
 
       <!-- 页面标题 -->
       <div class="mb-8">
-        <h1 class="text-4xl font-bold text-base-content mb-2">创建AI人物</h1>
+        <h1 class="text-4xl font-bold text-base-content mb-2">{{ editMode ? '编辑AI人物' : '创建AI人物' }}</h1>
         <p class="text-base-content/70">自定义你的AI角色，设置性格特征和对话风格</p>
       </div>
 
@@ -92,6 +92,130 @@
               </div>
             </div>
 
+            <!-- 沉浸式体验设置 -->
+            <div class="card bg-base-100 shadow-lg border border-base-300">
+              <div class="card-body">
+                <h2 class="card-title text-xl mb-4 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945c.367.158.793.293 1.273.293h.636c.48 0 .906-.135 1.273-.293V18a2 2 0 012-2 2 2 0 002-2v-1a2 2 0 012-2h1.945c.158-.367.293-.793.293-1.273v-.636c0-.48-.135-.906-.293-1.273H19a2 2 0 01-2-2 2 2 0 00-2-2H5a2 2 0 00-2 2 2 2 0 01-2 2h-.945c-.158.367-.293.793-.293 1.273v.636c0 .48.135.906.293 1.273z" />
+                  </svg>
+                  沉浸式体验设置
+                </h2>
+
+                <div class="space-y-6">
+                  <!-- 故事世界/环境设定 -->
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">故事世界/环境设定</span>
+                    </label>
+                    <textarea
+                      v-model="characterData.story_world"
+                      class="textarea textarea-bordered focus:textarea-primary h-24"
+                      placeholder="描述角色所处的世界环境，如：现代都市、魔幻王国、未来科技、古代宫廷等..."
+                    ></textarea>
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/60">设定角色的活动环境，影响对话的情境和氛围</span>
+                    </label>
+                  </div>
+
+                  <!-- 角色详细背景 -->
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">角色详细背景</span>
+                    </label>
+                    <textarea
+                      v-model="characterData.character_background"
+                      class="textarea textarea-bordered focus:textarea-primary h-32"
+                      placeholder="详细描述角色的成长经历、重要事件、人际关系、技能特长等..."
+                    ></textarea>
+                    <label class="label">
+                      <span class="label-text-alt text-base-content/60">丰富的背景故事让角色更加立体和真实</span>
+                    </label>
+                  </div>
+
+                  <!-- 当前任务/目标 -->
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">当前任务/目标</span>
+                    </label>
+                    <div class="flex items-center gap-4 mb-3">
+                      <label class="label cursor-pointer">
+                        <input type="checkbox" v-model="characterData.has_mission" class="checkbox checkbox-primary">
+                        <span class="label-text ml-2">角色当前有特定任务或目标</span>
+                      </label>
+                    </div>
+                    <textarea
+                      v-if="characterData.has_mission"
+                      v-model="characterData.current_mission"
+                      class="textarea textarea-bordered focus:textarea-primary h-24"
+                      placeholder="描述角色当前的任务、目标或正在处理的事情，如：寻找失踪的朋友、完成重要任务、解决某个问题等..."
+                    ></textarea>
+                    <label v-if="characterData.has_mission" class="label">
+                      <span class="label-text-alt text-base-content/60">任务让对话更有目的性和紧迫感</span>
+                    </label>
+                  </div>
+
+                  <!-- 情境状态 -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-control">
+                      <label class="label">
+                        <span class="label-text font-medium">当前情绪状态</span>
+                      </label>
+                      <select v-model="characterData.current_mood" class="select select-bordered focus:select-primary">
+                        <option value="">默认情绪</option>
+                        <option value="happy">开心愉悦</option>
+                        <option value="sad">悲伤沮丧</option>
+                        <option value="angry">愤怒生气</option>
+                        <option value="excited">兴奋激动</option>
+                        <option value="nervous">紧张不安</option>
+                        <option value="calm">平静冷静</option>
+                        <option value="confused">困惑迷茫</option>
+                        <option value="determined">坚定果断</option>
+                      </select>
+                    </div>
+
+                    <div class="form-control">
+                      <label class="label">
+                        <span class="label-text font-medium">时区设定</span>
+                      </label>
+                      <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            v-model="characterData.use_real_time"
+                            class="checkbox checkbox-primary checkbox-sm"
+                          />
+                          <span class="label-text">使用真实时间（根据用户时区动态变化）</span>
+                        </div>
+                        <select
+                          v-if="!characterData.use_real_time"
+                          v-model="characterData.time_setting"
+                          class="select select-bordered focus:select-primary"
+                        >
+                          <option value="">不限定</option>
+                          <option value="morning">清晨</option>
+                          <option value="noon">正午</option>
+                          <option value="afternoon">下午</option>
+                          <option value="evening">傍晚</option>
+                          <option value="night">夜晚</option>
+                          <option value="midnight">深夜</option>
+                        </select>
+                        <div v-if="characterData.use_real_time" class="bg-base-200 p-3 rounded-lg">
+                          <div class="text-sm text-base-content/70 mb-2">当前检测到的时区和时间：</div>
+                          <div class="font-mono text-sm">
+                            {{ currentTimezone }} - {{ currentTimeDisplay }}
+                          </div>
+                          <div class="text-xs text-base-content/50 mt-1">
+                            时间段：{{ getCurrentTimePeriod() }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 高级设置 -->
             <div class="space-y-2">
               <!-- 自定义指令 -->
@@ -104,18 +228,74 @@
                   自定义指令
                 </div>
                 <div class="collapse-content">
+                  <div class="alert alert-info shadow-lg mb-4">
+                    <div>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                      <div>
+                        <h3 class="font-bold">自定义指令使用说明</h3>
+                        <div class="text-xs">
+                          自定义指令可以精确控制AI的回应方式、语言风格和行为模式。留空将使用默认设置。
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="form-control">
                     <label class="label">
-                      <span class="label-text">系统指令</span>
+                      <span class="label-text font-medium">系统指令</span>
                     </label>
                     <textarea
                       v-model="characterData.custom_instructions"
                       class="textarea textarea-bordered focus:textarea-primary h-32"
-                      placeholder="输入自定义的系统指令，用于精确控制AI的行为模式..."
+                      placeholder="你是一个...，你的说话风格是...，你总是..."
                     ></textarea>
                     <label class="label">
-                      <span class="label-text-alt text-base-content/60">高级用户可以通过自定义指令实现更精确的角色控制</span>
+                      <span class="label-text-alt text-base-content/60">例如：你是一个温和的老师，总是用鼓励的语气回答问题，会在回答后提供相关的学习建议</span>
                     </label>
+                  </div>
+
+                  <!-- 常用指令示例 -->
+                  <div class="mt-4">
+                    <label class="label">
+                      <span class="label-text font-medium">常用示例（点击快速填入）</span>
+                    </label>
+                    <div class="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        @click="fillInstructionExample('温和耐心')"
+                        class="btn btn-outline btn-xs"
+                      >
+                        温和耐心型
+                      </button>
+                      <button
+                        type="button"
+                        @click="fillInstructionExample('专业权威')"
+                        class="btn btn-outline btn-xs"
+                      >
+                        专业权威型
+                      </button>
+                      <button
+                        type="button"
+                        @click="fillInstructionExample('幽默风趣')"
+                        class="btn btn-outline btn-xs"
+                      >
+                        幽默风趣型
+                      </button>
+                      <button
+                        type="button"
+                        @click="fillInstructionExample('简洁明了')"
+                        class="btn btn-outline btn-xs"
+                      >
+                        简洁明了型
+                      </button>
+                      <button
+                        type="button"
+                        @click="fillInstructionExample('详细解释')"
+                        class="btn btn-outline btn-xs"
+                      >
+                        详细解释型
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -181,47 +361,36 @@
                 </div>
               </div>
 
-              <!-- 故事背景 -->
-              <div class="collapse collapse-arrow bg-base-100 border border-base-300 shadow-lg">
-                <input type="checkbox" />
-                <div class="collapse-title font-medium flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  故事背景
-                </div>
-                <div class="collapse-content">
-                  <div class="form-control">
-                    <label class="label">
-                      <span class="label-text">背景故事</span>
-                    </label>
-                    <textarea
-                      v-model="characterData.story_background"
-                      class="textarea textarea-bordered focus:textarea-primary h-32"
-                      placeholder="描述角色的世界观、历史背景或特殊设定..."
-                    ></textarea>
-                    <label class="label">
-                      <span class="label-text-alt text-base-content/60">丰富的背景故事能让对话更加生动有趣</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <!-- 提交按钮 -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-              <button type="submit" class="btn btn-primary btn-lg shadow-lg" :disabled="loading">
+              <button v-if="!editMode" type="submit" class="btn btn-primary btn-lg shadow-lg" :disabled="loading">
                 <span v-if="loading" class="loading loading-spinner loading-sm mr-2"></span>
                 <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
                 </svg>
                 保存人物并聊天
               </button>
-              <button type="button" @click="saveAndReturn" class="btn btn-secondary btn-lg shadow-lg" :disabled="loading">
+              <button v-if="!editMode" type="button" @click="saveAndReturn" class="btn btn-secondary btn-lg shadow-lg" :disabled="loading">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
                 保存人物并返回主页
+              </button>
+              <!-- 编辑模式按钮 -->
+              <button v-if="editMode" type="submit" class="btn btn-primary btn-lg shadow-lg" :disabled="loading">
+                <span v-if="loading" class="loading loading-spinner loading-sm mr-2"></span>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                更新人物信息
+              </button>
+              <button v-if="editMode" type="button" @click="router.push('/')" class="btn btn-secondary btn-lg shadow-lg" :disabled="loading">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                取消编辑
               </button>
               <router-link to="/" class="btn btn-outline btn-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -278,6 +447,93 @@
             <!-- 性格特征雷达图 -->
             <PersonalityRadar v-model="characterData.personality_data" />
 
+            <!-- 版本管理 -->
+            <div class="card bg-base-100 shadow-lg border border-base-300 mb-6">
+              <div class="card-body">
+                <h3 class="card-title text-lg mb-4 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  版本管理
+                </h3>
+
+                <!-- 保存版本 -->
+                <div class="mb-4">
+                  <div class="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      v-model="versionNote"
+                      placeholder="版本备注（可选）"
+                      class="input input-bordered flex-1 input-sm focus:input-primary"
+                    />
+                    <button
+                      @click="saveCurrentVersion"
+                      class="btn btn-primary btn-sm"
+                      :disabled="!characterData.name.trim() || savingVersion"
+                    >
+                      <span v-if="savingVersion" class="loading loading-spinner loading-xs mr-1"></span>
+                      <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      保存版本
+                    </button>
+                  </div>
+                  <p class="text-xs text-base-content/60">
+                    保存当前配置为一个版本，以便稍后恢复或对比
+                  </p>
+                </div>
+
+                <!-- 版本列表 -->
+                <div v-if="characterVersions.length > 0">
+                  <h4 class="font-medium mb-2">已保存的版本</h4>
+                  <div class="space-y-2 max-h-48 overflow-y-auto">
+                    <div
+                      v-for="version in characterVersions"
+                      :key="version.id"
+                      class="flex items-center justify-between p-3 bg-base-200 rounded-lg"
+                    >
+                      <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                          <span class="badge badge-primary badge-sm">v{{ version.version }}</span>
+                          <span class="text-sm font-medium">{{ version.note }}</span>
+                        </div>
+                        <p class="text-xs text-base-content/60 mt-1">
+                          {{ new Date(version.created_at).toLocaleString('zh-CN') }}
+                        </p>
+                      </div>
+                      <div class="flex gap-1">
+                        <button
+                          @click="loadVersion(version)"
+                          class="btn btn-ghost btn-xs"
+                          title="加载此版本"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                        </button>
+                        <button
+                          @click="deleteVersion(version)"
+                          class="btn btn-ghost btn-xs text-error hover:bg-error/10"
+                          title="删除此版本"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-center py-4 text-base-content/60">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p class="text-sm">还没有保存的版本</p>
+                  <p class="text-xs">创建角色后即可保存版本</p>
+                </div>
+              </div>
+            </div>
+
             <!-- 测试输出 -->
             <div class="card bg-base-100 shadow-lg border border-base-300">
               <div class="card-body">
@@ -291,6 +547,7 @@
                 <div class="form-control mb-4">
                   <label class="label">
                     <span class="label-text">测试问题</span>
+                    <span class="label-text-alt text-success">✨ 实时预览</span>
                   </label>
                   <input
                     type="text"
@@ -300,13 +557,24 @@
                   />
                 </div>
 
-                <button type="button" @click="testCharacterOutput" class="btn btn-primary btn-block mb-4" :disabled="testLoading">
-                  <span v-if="testLoading" class="loading loading-spinner loading-sm mr-2"></span>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.5a1.5 1.5 0 001.5-1.5V9c0-.828-.672-1.5-1.5-1.5M15 10h-1.5A1.5 1.5 0 0112 11.5v-.5c0-.828.672-1.5 1.5-1.5m6 5.5v.5a3 3 0 01-3 3h-6a3 3 0 01-3-3v-.5m14-5.5a2 2 0 00-2-2h-10a2 2 0 00-2 2m14 0v5.5m0-5.5a2 2 0 012 2v4a2 2 0 01-2 2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485A2 2 0 015.172 19h-2.343A2 2 0 011 17v-2.343a2 2 0 01.586-1.414L9.172 5.657A2 2 0 0111 4.414V7.343z" />
-                  </svg>
-                  测试输出
-                </button>
+                <!-- 预设问题快捷选项 -->
+                <div class="mb-4">
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      v-for="question in presetQuestions"
+                      :key="question"
+                      @click="testInput = question"
+                      class="btn btn-xs btn-outline"
+                    >
+                      {{ question }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="alert alert-info mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <span class="text-sm">预览会实时反映您对角色参数的所有修改，包括性格、背景、情绪等设置的变化。</span>
+                </div>
 
                 <div class="form-control">
                   <label class="label">
@@ -326,24 +594,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, reactive, watch, onMounted, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useCharactersStore } from '@/stores/characters';
 import { useChatStore } from '@/stores/chat';
 import { useGlobalStore } from '@/stores/global';
 import PersonalityRadar from '@/components/PersonalityRadar.vue';
 
 const router = useRouter();
+const route = useRoute();
 const charactersStore = useCharactersStore();
 const chatStore = useChatStore();
 const globalStore = useGlobalStore();
+
+// 检测是否为编辑模式
+const editMode = computed(() => !!route.query.edit);
+const editCharacterId = computed(() => editMode.value ? parseInt(route.query.edit as string) : null);
 
 // 响应式数据
 const loading = ref(false);
 const testLoading = ref(false);
 const avatarPreview = ref<string | null>(null);
-const testInput = ref('');
+const testInput = ref('你好！你能介绍一下自己吗？');
 const testOutput = ref('');
+
+// 预设测试问题
+const presetQuestions = [
+  '你好！你能介绍一下自己吗？',
+  '你现在心情怎么样？',
+  '告诉我你的故事',
+  '你有什么特殊能力吗？',
+  '你最喜欢做什么？'
+];
+
+// 版本管理相关
+const versionNote = ref('');
+const savingVersion = ref(false);
+const characterVersions = ref([]);
+const currentVersion = ref(1);
 
 const characterData = reactive({
   name: '',
@@ -351,6 +639,14 @@ const characterData = reactive({
   personality_preset: '',
   custom_instructions: '',
   story_background: '',
+  // 新增沉浸式字段
+  story_world: '',
+  character_background: '',
+  has_mission: false,
+  current_mission: '',
+  current_mood: '',
+  time_setting: '',
+  use_real_time: true, // 默认使用真实时间
   is_public: false,
   avatar: null as string | null,
   personality_data: {
@@ -363,6 +659,11 @@ const characterData = reactive({
   },
   examples: [] as Array<{ input: string; output: string }>
 });
+
+// 时区相关变量
+const currentTimezone = ref('');
+const currentTimeDisplay = ref('');
+
 
 // 方法
 const addExample = () => {
@@ -399,20 +700,6 @@ const handleAvatarUpload = (event: Event) => {
   reader.readAsDataURL(file);
 };
 
-const testCharacterOutput = () => {
-  if (!testInput.value.trim()) {
-    globalStore.showNotification('请输入测试问题', 'warning');
-    return;
-  }
-
-  testLoading.value = true;
-
-  // 模拟AI回复生成
-  setTimeout(() => {
-    testOutput.value = generateMockResponse(testInput.value);
-    testLoading.value = false;
-  }, 1500);
-};
 
 // 预设性格模板
 const personalityPresets = {
@@ -431,35 +718,267 @@ watch(() => characterData.personality_preset, (newPreset) => {
   }
 });
 
+// 防抖函数 - 避免过于频繁的API调用
+let debounceTimer: NodeJS.Timeout | null = null;
+
+// 使用真实AI API生成测试回复
+const generateRealAIResponse = async (input: string): Promise<string> => {
+  if (!input.trim()) return '';
+
+  try {
+    testLoading.value = true;
+
+    // 构建临时角色数据用于测试
+    const tempCharacterData = {
+      ...characterData,
+      id: 999, // 临时ID，用于测试
+      name: characterData.name || '测试角色'
+    };
+
+    // 调用真实的AI接口
+    const response = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        character_id: 999, // 使用临时ID
+        message: input,
+        // 传递完整角色数据用于AI生成
+        character_data: tempCharacterData
+      })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.response || '暂时无法获取AI回复，请稍后再试。';
+    } else {
+      throw new Error('AI请求失败');
+    }
+  } catch (error) {
+    console.error('AI回复生成失败:', error);
+    return '⚠️ AI服务暂时不可用，这里显示模拟回复：\n\n' + generateMockResponse(input);
+  } finally {
+    testLoading.value = false;
+  }
+};
+
+// 防抖更新测试回复
+const debouncedUpdateTestOutput = (input: string) => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+
+  debounceTimer = setTimeout(async () => {
+    if (input.trim()) {
+      testOutput.value = await generateRealAIResponse(input);
+    } else {
+      testOutput.value = '';
+    }
+  }, 800); // 800ms防抖延迟
+};
+
+// 监听测试输入变化，实时更新预览（使用防抖）
+watch(() => testInput.value, (newInput) => {
+  debouncedUpdateTestOutput(newInput);
+});
+
+// 监听所有角色参数变化，自动更新预览（使用防抖）
+watch(() => [
+  characterData.name,
+  characterData.description,
+  characterData.story_world,
+  characterData.character_background,
+  characterData.custom_instructions,
+  characterData.current_mood,
+  characterData.has_mission,
+  characterData.current_mission,
+  characterData.personality_data.energy,
+  characterData.personality_data.friendliness,
+  characterData.personality_data.humor,
+  characterData.personality_data.professionalism,
+  characterData.personality_data.creativity,
+  characterData.personality_data.empathy
+], () => {
+  // 如果有测试输入，自动更新预览
+  if (testInput.value.trim()) {
+    debouncedUpdateTestOutput(testInput.value);
+  }
+}, { deep: true });
+
+// 初始化时生成预览
+onMounted(async () => {
+  // 如果是编辑模式，加载角色数据
+  if (editMode.value && editCharacterId.value) {
+    try {
+      loading.value = true;
+      console.log('Edit mode detected, loading character ID:', editCharacterId.value);
+      const response = await fetch(`/api/characters/${editCharacterId.value}`);
+      console.log('API response:', response);
+
+      if (response.ok) {
+        const character = await response.json();
+        console.log('Character data received:', character);
+
+        // 填充表单数据
+        characterData.name = character.name;
+        characterData.description = character.description;
+        characterData.personality_preset = character.personality_preset;
+        characterData.custom_instructions = character.custom_instructions || '';
+        characterData.story_world = character.story_world || '';
+        characterData.character_background = character.character_background || '';
+        characterData.has_mission = Boolean(character.has_mission);
+        characterData.current_mission = character.current_mission || '';
+        characterData.current_mood = character.current_mood || 'normal';
+        characterData.time_setting = character.time_setting || 'anytime';
+        characterData.use_real_time = Boolean(character.use_real_time);
+        characterData.is_public = Boolean(character.is_public);
+
+        // 解析JSON数据
+        try {
+          characterData.personality_data = typeof character.personality_data === 'string'
+            ? JSON.parse(character.personality_data)
+            : character.personality_data;
+          characterData.examples = typeof character.examples === 'string'
+            ? JSON.parse(character.examples)
+            : character.examples;
+        } catch (e) {
+          console.warn('Failed to parse character data:', e);
+        }
+
+        // 设置头像
+        if (character.avatar) {
+          avatarPreview.value = character.avatar;
+        }
+      } else {
+        console.error('Failed to fetch character - response not ok:', response.status);
+        globalStore.showNotification('加载角色数据失败', 'error');
+        router.push('/');
+      }
+    } catch (error) {
+      console.error('Failed to load character - exception:', error);
+      globalStore.showNotification('加载角色数据失败', 'error');
+      router.push('/');
+    } finally {
+      loading.value = false;
+    }
+  } else {
+    console.log('Edit mode check:', {
+      editMode: editMode.value,
+      editCharacterId: editCharacterId.value,
+      routeQuery: route.query
+    });
+  }
+
+  // 生成初始预览
+  if (testInput.value.trim()) {
+    testOutput.value = await generateRealAIResponse(testInput.value);
+  }
+});
+
 const generateMockResponse = (input: string): string => {
   const personality = characterData.personality_data;
-  const name = characterData.name || '我';
+  const name = characterData.name || '测试角色';
+  const description = characterData.description;
+  const storyWorld = characterData.story_world;
+  const characterBackground = characterData.character_background;
+  const customInstructions = characterData.custom_instructions;
+  const currentMood = characterData.current_mood;
+  const hasMission = characterData.has_mission;
+  const currentMission = characterData.current_mission;
 
-  let response = `你好！我是${name}。`;
+  // 根据角色名称和描述构建开场白
+  let response = `你好！我是${name}`;
 
-  if (personality.friendliness > 70) {
-    response += '很高兴和你聊天！';
+  if (description) {
+    response += `，${description}`;
   }
 
+  response += '。';
+
+  // 根据友善度调整语调
+  if (personality.friendliness > 80) {
+    response += '很开心能遇到你！';
+  } else if (personality.friendliness > 60) {
+    response += '很高兴认识你。';
+  } else if (personality.friendliness < 40) {
+    response += '...';
+  }
+
+  // 根据幽默感添加表情
   if (personality.humor > 70) {
     response += ' 😊';
+  } else if (personality.humor > 50) {
+    response += ' 🙂';
   }
 
-  if (personality.professionalism > 70) {
-    response += `\n\n关于你的问题"${input}"，这确实是个很好的问题。`;
+  // 根据能量水平调整表达方式
+  if (personality.energy > 80) {
+    response = response.replace('。', '！');
+  }
+
+  // 如果有故事世界背景，融入环境描述
+  if (storyWorld && storyWorld.trim()) {
+    response += `\n\n我来自${storyWorld}`;
+    if (characterBackground && characterBackground.trim()) {
+      response += `。${characterBackground.substring(0, 50)}${characterBackground.length > 50 ? '...' : ''}`;
+    } else {
+      response += '。';
+    }
+  }
+
+  // 根据当前情绪状态调整回复
+  if (currentMood) {
+    const moodResponses = {
+      happy: '我现在心情很好',
+      excited: '我现在特别兴奋',
+      calm: '我现在很平静',
+      sad: '我现在有些忧郁',
+      angry: '我现在有些生气',
+      confused: '我现在有点困惑',
+      tired: '我现在有些疲惫'
+    };
+    if (moodResponses[currentMood as keyof typeof moodResponses]) {
+      response += `\n\n${moodResponses[currentMood as keyof typeof moodResponses]}。`;
+    }
+  }
+
+  // 如果有任务，提及任务
+  if (hasMission && currentMission && currentMission.trim()) {
+    response += `\n\n我目前的任务是：${currentMission}`;
+  }
+
+  // 根据专业性调整对问题的回应方式
+  response += `\n\n`;
+  if (personality.professionalism > 80) {
+    response += `关于您提出的问题"${input}"，让我为您详细分析一下。`;
+  } else if (personality.professionalism > 60) {
+    response += `关于"${input}"这个问题，我来回答一下。`;
   } else {
-    response += `\n\n关于"${input}"这个问题，`;
+    response += `"${input}"？这个问题很有趣！`;
   }
 
-  if (personality.creativity > 70) {
-    response += '让我从一个独特的角度来回答...';
+  // 根据创造力调整回答风格
+  if (personality.creativity > 80) {
+    response += '\n\n让我从一个全新的角度来思考这个问题...';
+  } else if (personality.creativity > 60) {
+    response += '\n\n我觉得可以这样理解...';
   }
 
-  if (personality.empathy > 70) {
-    response += '\n\n我理解你的想法，';
+  // 根据同理心调整情感表达
+  if (personality.empathy > 80) {
+    response += '\n\n我完全理解你的想法和感受，';
+  } else if (personality.empathy > 60) {
+    response += '\n\n我理解你的观点，';
   }
 
-  response += '\n\n这只是一个基于当前性格设置的模拟回复。实际的AI回复会更加智能和个性化。';
+  // 如果有自定义指令，体现指令影响
+  if (customInstructions && customInstructions.trim()) {
+    const instructionHint = customInstructions.substring(0, 30);
+    response += `\n\n*根据设定：${instructionHint}${customInstructions.length > 30 ? '...' : ''}*`;
+  }
+
+  response += '\n\n---\n💡 这是基于当前所有参数设置的动态预览。调整任何参数都会影响回复内容。';
 
   return response;
 };
@@ -467,7 +986,7 @@ const generateMockResponse = (input: string): string => {
 const handleSubmit = async () => {
   try {
     loading.value = true;
-    globalStore.setLoading(true, '正在创建角色...');
+    globalStore.setLoading(true, editMode.value ? '正在更新角色...' : '正在创建角色...');
 
     // 验证必填字段
     if (!characterData.name.trim() || !characterData.description.trim()) {
@@ -475,24 +994,40 @@ const handleSubmit = async () => {
       return;
     }
 
-    // 创建角色
-    const newCharacter = await charactersStore.createCharacter(characterData);
+    let resultCharacter;
 
-    // 设置为当前角色
-    globalStore.setCurrentCharacter(newCharacter);
+    if (editMode.value && editCharacterId.value) {
+      // 更新现有角色
+      resultCharacter = await charactersStore.updateCharacter(editCharacterId.value, characterData);
+      globalStore.showNotification('角色更新成功！', 'success');
 
-    // 创建聊天会话
-    await chatStore.createSession(newCharacter.id, newCharacter.name);
+      // 跳转回首页
+      setTimeout(() => {
+        router.push('/');
+      }, 1000);
+    } else {
+      // 创建新角色
+      resultCharacter = await charactersStore.createCharacter(characterData);
 
-    globalStore.showNotification('角色创建成功！正在跳转到聊天页面...', 'success');
+      // 设置为当前角色
+      globalStore.setCurrentCharacter(resultCharacter);
 
-    // 跳转到聊天页面
-    setTimeout(() => {
-      router.push(`/chat/${newCharacter.id}`);
-    }, 1500);
+      // 创建聊天会话
+      await chatStore.createSession(resultCharacter.id, resultCharacter.name);
+
+      globalStore.showNotification('角色创建成功！正在跳转到聊天页面...', 'success');
+
+      // 跳转到聊天页面
+      setTimeout(() => {
+        router.push(`/chat/${resultCharacter.id}`);
+      }, 1500);
+    }
   } catch (error) {
-    console.error('Failed to create character:', error);
-    globalStore.showNotification('创建角色失败，请重试', 'error');
+    console.error('Failed to submit character:', error);
+    globalStore.showNotification(
+      editMode.value ? '更新角色失败，请重试' : '创建角色失败，请重试',
+      'error'
+    );
   } finally {
     loading.value = false;
     globalStore.setLoading(false);
@@ -527,6 +1062,212 @@ const saveAndReturn = async () => {
     globalStore.setLoading(false);
   }
 };
+
+// =============== 时区和时间功能 ===============
+
+// 获取当前时间段
+const getCurrentTimePeriod = () => {
+  const now = new Date();
+  const hour = now.getHours();
+
+  if (hour >= 5 && hour < 12) {
+    return 'morning';
+  } else if (hour >= 12 && hour < 18) {
+    return 'afternoon';
+  } else if (hour >= 18 && hour < 22) {
+    return 'evening';
+  } else {
+    return 'night';
+  }
+};
+
+// 更新时区信息
+const updateTimezoneInfo = () => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const now = new Date();
+  const timeString = now.toLocaleString('zh-CN', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+
+  currentTimezone.value = timezone;
+  currentTimeDisplay.value = timeString;
+
+  // 如果开启了实时时间，更新时间设定
+  if (characterData.use_real_time) {
+    characterData.time_setting = getCurrentTimePeriod();
+  }
+};
+
+// 初始化时区信息
+updateTimezoneInfo();
+
+// 每分钟更新时间显示
+setInterval(updateTimezoneInfo, 60000);
+
+// =============== 版本管理功能 ===============
+
+// 保存当前版本
+const saveCurrentVersion = async () => {
+  if (!characterData.name.trim()) {
+    globalStore.showNotification('请先输入角色名称', 'warning');
+    return;
+  }
+
+  try {
+    savingVersion.value = true;
+
+    // 调用API保存版本
+    const response = await fetch('/api/characters/versions/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        characterName: characterData.name,
+        characterData: { ...characterData },
+        note: versionNote.value || undefined
+      })
+    });
+
+    if (response.ok) {
+      const newVersion = await response.json();
+
+      // 重新加载版本列表
+      await loadVersionHistory();
+
+      versionNote.value = '';
+      globalStore.showNotification(`版本 v${newVersion.version} 保存成功！`, 'success');
+    } else {
+      throw new Error('Failed to save version');
+    }
+  } catch (error) {
+    console.error('Save version failed:', error);
+    globalStore.showNotification('版本保存失败，请稍后重试', 'error');
+  } finally {
+    savingVersion.value = false;
+  }
+};
+
+// 加载指定版本
+const loadVersion = async (version: any) => {
+  if (confirm(`确定要加载版本 v${version.version} 吗？当前未保存的修改将丢失。`)) {
+    try {
+      // 调用API获取版本数据
+      const response = await fetch(`/api/characters/versions/${encodeURIComponent(version.character_name)}/${version.version}`);
+
+      if (response.ok) {
+        const versionData = await response.json();
+
+        // 恢复数据
+        Object.assign(characterData, versionData.character_data);
+
+        globalStore.showNotification(`已加载版本 v${version.version}`, 'success');
+      } else {
+        throw new Error('Failed to load version');
+      }
+    } catch (error) {
+      console.error('Load version failed:', error);
+      globalStore.showNotification('加载版本失败，请稍后重试', 'error');
+    }
+  }
+};
+
+// 删除版本
+const deleteVersion = async (version: any) => {
+  if (confirm(`确定要删除版本 v${version.version} 吗？此操作无法撤销。`)) {
+    try {
+      // 调用API删除版本
+      const response = await fetch(`/api/characters/versions/${encodeURIComponent(version.character_name)}/${version.version}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // 重新加载版本列表
+        await loadVersionHistory();
+
+        globalStore.showNotification(`版本 v${version.version} 删除成功`, 'success');
+      } else {
+        throw new Error('Failed to delete version');
+      }
+    } catch (error) {
+      console.error('Delete version failed:', error);
+      globalStore.showNotification('版本删除失败，请稍后重试', 'error');
+    }
+  }
+};
+
+// 加载历史版本
+const loadVersionHistory = async () => {
+  if (characterData.name.trim()) {
+    try {
+      // 调用API获取版本列表
+      const response = await fetch(`/api/characters/versions/${encodeURIComponent(characterData.name)}`);
+
+      if (response.ok) {
+        const versions = await response.json();
+        characterVersions.value = versions;
+
+        // 设置当前版本号为最大版本号+1
+        if (versions.length > 0) {
+          const maxVersion = Math.max(...versions.map((v: any) => v.version));
+          currentVersion.value = maxVersion + 1;
+        } else {
+          currentVersion.value = 1;
+        }
+      } else {
+        throw new Error('Failed to load version history');
+      }
+    } catch (error) {
+      console.error('Load version history failed:', error);
+      // 如果API调用失败，将版本列表设置为空
+      characterVersions.value = [];
+      currentVersion.value = 1;
+    }
+  } else {
+    characterVersions.value = [];
+    currentVersion.value = 1;
+  }
+};
+
+// 格式化日期
+const formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
+
+// 填入自定义指令示例
+const fillInstructionExample = (type: string) => {
+  const examples = {
+    '温和耐心': '你是一个温和耐心的助手，总是以鼓励和支持的语气回应用户。你会认真倾听用户的问题，用简单易懂的方式解释复杂概念，并在适当的时候给予情感支持和鼓励。',
+    '专业权威': '你是一个专业且权威的专家，在回答问题时会提供准确、详细的信息和专业见解。你的语言严谨规范，会引用相关的理论或数据来支持你的观点，让用户感受到你的专业性。',
+    '幽默风趣': '你是一个幽默风趣的伙伴，善于用轻松愉快的方式与用户交流。你会在回答中适当加入幽默元素、有趣的比喻或俏皮话，让交流变得轻松有趣，但同时保持信息的准确性。',
+    '简洁明了': '你总是用最简洁明了的方式回答问题。避免冗长的解释，直接提供核心信息和要点。你的回答简短有力，让用户能够快速理解并获得所需信息。',
+    '详细解释': '你会非常详细地解释每个问题，提供全面的背景信息、多个角度的分析和具体的例子。你认为充分的解释有助于用户更好地理解问题，因此会尽可能地提供完整的信息。'
+  };
+
+  characterData.custom_instructions = examples[type] || '';
+};
+
+// 监听角色名称变化，加载版本历史
+watch(() => characterData.name, (newName) => {
+  if (newName) {
+    loadVersionHistory();
+  } else {
+    characterVersions.value = [];
+    currentVersion.value = 1;
+  }
+});
 </script>
 
 <style scoped>

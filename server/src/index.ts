@@ -14,7 +14,7 @@ import { aiRouter } from './routes/ai';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 8081;
+const port = process.env.PORT || 8080;
 
 // 创建HTTP服务器
 const server = createServer(app);
@@ -24,6 +24,13 @@ const wss = new WebSocketServer({ server });
 
 // 中间件
 app.use(cors());
+
+// 确保UTF-8字符编码处理
+app.use((req, res, next) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 

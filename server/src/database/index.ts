@@ -4,8 +4,27 @@ import { promisify } from 'util';
 
 const dbPath = path.join(__dirname, '../../database.db');
 
-// 创建数据库连接
-export const db = new sqlite3.Database(dbPath);
+// 创建数据库连接，确保UTF-8编码
+export const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Database connection error:', err);
+  } else {
+    console.log('Database connected with UTF-8 encoding');
+    // 确保SQLite使用UTF-8编码
+    db.exec("PRAGMA encoding = 'UTF-8'", (err) => {
+      if (err) {
+        console.error('Error setting UTF-8 encoding:', err);
+      } else {
+        console.log('✅ SQLite UTF-8 encoding set successfully');
+      }
+    });
+
+    // 设置其他重要的PRAGMA
+    db.exec("PRAGMA foreign_keys = ON", (err) => {
+      if (err) console.error('Error enabling foreign keys:', err);
+    });
+  }
+});
 
 // 将sqlite3方法promisify
 export const dbRun = promisify(db.run.bind(db));
@@ -26,6 +45,14 @@ export async function initDatabase() {
       personality_preset TEXT,
       custom_instructions TEXT,
       story_background TEXT,
+      -- 新增沉浸式字段
+      story_world TEXT, -- 故事世界/环境设定
+      character_background TEXT, -- 角色详细背景
+      has_mission BOOLEAN DEFAULT 0, -- 是否有任务
+      current_mission TEXT, -- 当前任务描述
+      current_mood TEXT, -- 当前情绪状态
+      time_setting TEXT, -- 时间设定
+      use_real_time BOOLEAN DEFAULT 1, -- 使用真实时间
       is_public BOOLEAN DEFAULT 0,
       personality_data TEXT, -- JSON格式存储性格雷达图数据
       examples TEXT, -- JSON格式存储输入输出样例
@@ -94,6 +121,19 @@ export async function initDatabase() {
       stt_config TEXT, -- JSON格式存储STT配置
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // 创建角色版本管理表
+  await dbRun(`
+    CREATE TABLE IF NOT EXISTS character_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      character_name TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      note TEXT, -- 版本备注
+      character_data TEXT, -- JSON格式存储完整角色数据
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(character_name, version)
     )
   `);
 
@@ -176,8 +216,10 @@ export class DatabaseService {
     return new Promise((resolve, reject) => {
       db.run(`
         INSERT INTO characters (name, description, avatar, personality_preset, custom_instructions,
-                               story_background, is_public, personality_data, examples)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                               story_background, story_world, character_background, has_mission,
+                               current_mission, current_mood, time_setting, use_real_time, is_public,
+                               personality_data, examples)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         characterData.name,
         characterData.description,
@@ -185,6 +227,13 @@ export class DatabaseService {
         characterData.personality_preset,
         characterData.custom_instructions,
         characterData.story_background,
+        characterData.story_world,
+        characterData.character_background,
+        characterData.has_mission ? 1 : 0,
+        characterData.current_mission,
+        characterData.current_mood,
+        characterData.time_setting,
+        characterData.use_real_time ? 1 : 0,
         characterData.is_public ? 1 : 0,
         JSON.stringify(characterData.personality_data),
         JSON.stringify(characterData.examples)
@@ -194,6 +243,76 @@ export class DatabaseService {
         } else {
           resolve({ id: this.lastID, ...characterData });
         }
+      });
+    });
+  }
+
+  // 更新角色
+  static async updateCharacter(id: number, characterData: any) {
+    return new Promise((resolve, reject) => {
+      db.run(`
+        UPDATE characters SET
+          name = ?, description = ?, avatar = ?, personality_preset = ?,
+          custom_instructions = ?, story_background = ?, story_world = ?,
+          character_background = ?, has_mission = ?, current_mission = ?,
+          current_mood = ?, time_setting = ?, use_real_time = ?, is_public = ?,
+          personality_data = ?, examples = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `, [
+        characterData.name,
+        characterData.description,
+        characterData.avatar,
+        characterData.personality_preset,
+        characterData.custom_instructions,
+        characterData.story_background,
+        characterData.story_world,
+        characterData.character_background,
+        characterData.has_mission ? 1 : 0,
+        characterData.current_mission,
+        characterData.current_mood,
+        characterData.time_setting,
+        characterData.use_real_time ? 1 : 0,
+        characterData.is_public ? 1 : 0,
+        JSON.stringify(characterData.personality_data),
+        JSON.stringify(characterData.examples),
+        id
+      ], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ changes: this.changes, id, ...characterData });
+        }
+      });
+    });
+  }
+
+  // 删除角色
+  static async deleteCharacter(id: number) {
+    return new Promise((resolve, reject) => {
+      // 首先删除相关的聊天记录
+      db.run(`DELETE FROM chat_messages WHERE session_id IN
+              (SELECT id FROM chat_sessions WHERE character_id = ?)`, [id], (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        // 删除聊天会话
+        db.run(`DELETE FROM chat_sessions WHERE character_id = ?`, [id], (err) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          // 最后删除角色
+          db.run(`DELETE FROM characters WHERE id = ?`, [id], function(err) {
+            if (err) {
+              reject(err);
+            } else {
+              resolve({ changes: this.changes });
+            }
+          });
+        });
       });
     });
   }
@@ -379,5 +498,100 @@ export class DatabaseService {
       // 如果没有现有配置，创建新配置
       await this.saveSpeechConfiguration(configData);
     }
+  }
+
+  // 角色版本管理方法
+
+  // 保存角色版本
+  static async saveCharacterVersion(characterName: string, characterData: any, note?: string) {
+    // 获取下一个版本号
+    const lastVersion = await dbGet(
+      'SELECT version FROM character_versions WHERE character_name = ? ORDER BY version DESC LIMIT 1',
+      [characterName]
+    );
+    const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+
+    return new Promise((resolve, reject) => {
+      db.run(`
+        INSERT INTO character_versions (character_name, version, note, character_data)
+        VALUES (?, ?, ?, ?)
+      `, [
+        characterName,
+        nextVersion,
+        note || `版本 ${nextVersion}`,
+        JSON.stringify(characterData)
+      ], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({
+            id: this.lastID,
+            character_name: characterName,
+            version: nextVersion,
+            note: note || `版本 ${nextVersion}`,
+            created_at: new Date().toISOString()
+          });
+        }
+      });
+    });
+  }
+
+  // 获取角色的所有版本
+  static async getCharacterVersions(characterName: string) {
+    return await dbAll(
+      'SELECT * FROM character_versions WHERE character_name = ? ORDER BY version DESC',
+      [characterName]
+    );
+  }
+
+  // 获取特定版本的角色数据
+  static async getCharacterVersion(characterName: string, version: number) {
+    const versionData = await dbGet(
+      'SELECT * FROM character_versions WHERE character_name = ? AND version = ?',
+      [characterName, version]
+    );
+
+    if (versionData) {
+      return {
+        ...versionData,
+        character_data: JSON.parse(versionData.character_data)
+      };
+    }
+
+    return null;
+  }
+
+  // 删除角色版本
+  static async deleteCharacterVersion(characterName: string, version: number) {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'DELETE FROM character_versions WHERE character_name = ? AND version = ?',
+        [characterName, version],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ changes: this.changes });
+          }
+        }
+      );
+    });
+  }
+
+  // 删除角色的所有版本（当删除角色时调用）
+  static async deleteAllCharacterVersions(characterName: string) {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'DELETE FROM character_versions WHERE character_name = ?',
+        [characterName],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ changes: this.changes });
+          }
+        }
+      );
+    });
   }
 }
