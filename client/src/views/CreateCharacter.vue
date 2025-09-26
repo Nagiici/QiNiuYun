@@ -162,7 +162,7 @@
                         <span class="label-text font-medium">当前情绪状态</span>
                       </label>
                       <select v-model="characterData.current_mood" class="select select-bordered focus:select-primary">
-                        <option value="">默认情绪</option>
+                        <option value="calm">默认情绪</option>
                         <option value="happy">开心愉悦</option>
                         <option value="sad">悲伤沮丧</option>
                         <option value="angry">愤怒生气</option>
@@ -644,7 +644,7 @@ const characterData = reactive({
   character_background: '',
   has_mission: false,
   current_mission: '',
-  current_mood: '',
+  current_mood: 'calm',
   time_setting: '',
   use_real_time: true, // 默认使用真实时间
   is_public: false,
