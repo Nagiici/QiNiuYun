@@ -1,6 +1,7 @@
 import express from 'express';
 import { DatabaseService } from '../database';
 import { v4 as uuidv4 } from 'uuid';
+import { validate, validateParams, sessionSchema, idParamSchema } from '../middleware/validation';
 
 export const chatsRouter = express.Router();
 
@@ -16,7 +17,7 @@ chatsRouter.get('/sessions', async (req, res) => {
 });
 
 // 创建新的聊天会话
-chatsRouter.post('/sessions', async (req, res) => {
+chatsRouter.post('/sessions', validate(sessionSchema), async (req, res) => {
   try {
     const { character_id, character_name } = req.body;
 

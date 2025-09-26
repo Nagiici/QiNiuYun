@@ -4,11 +4,14 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import './style.css';
 
-// 导入页面组件
-import Home from './views/Home.vue';
-import CreateCharacter from './views/CreateCharacter.vue';
-import Chat from './views/Chat.vue';
-import Settings from './views/Settings.vue';
+// 懒加载页面组件（代码分割）
+const Home = () => import('./views/Home.vue');
+const CreateCharacter = () => import('./views/CreateCharacter.vue');
+const Chat = () => import('./views/Chat.vue');
+const Settings = () => import('./views/Settings.vue');
+
+// 加载组件
+const LoadingSpinner = () => import('./components/LoadingSpinner.vue');
 
 // 创建路由
 const router = createRouter({

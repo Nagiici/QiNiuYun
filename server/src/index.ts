@@ -11,6 +11,14 @@ import { charactersRouter } from './routes/characters';
 import { chatsRouter } from './routes/chats';
 import { aiRouter } from './routes/ai';
 import { systemRouter } from './routes/system';
+import { generalLimiter, uploadLimiter } from './middleware/rateLimiter';
+import {
+  globalErrorHandler,
+  notFoundHandler,
+  requestLogger,
+  timeoutHandler,
+  errorRecoveryHandler
+} from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -23,8 +31,27 @@ const server = createServer(app);
 // 初始化WebSocket服务器
 const wss = new WebSocketServer({ server });
 
-// 中间件
-app.use(cors());
+// 中间件 - 安全的CORS配置
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://your-domain.com'] // 生产环境只允许特定域名
+    : ['http://localhost:3000', 'http://localhost:5173'], // 开发环境允许本地域名
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400 // 24小时预检缓存
+};
+
+app.use(cors(corsOptions));
+
+// 应用请求日志
+app.use(requestLogger);
+
+// 应用超时处理
+app.use(timeoutHandler(30000));
+
+// 应用全局限流
+app.use(generalLimiter);
 
 // 确保UTF-8字符编码处理
 app.use((req, res, next) => {
@@ -51,17 +78,45 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit (reduced from 10MB)
+    files: 1 // Only one file at a time
+  },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    // 严格的MIME类型验证
+    const allowedMimes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp'
+    ];
+
+    // 严格的文件扩展名验证
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+
+    if (allowedMimes.includes(file.mimetype) && allowedExtensions.includes(fileExtension)) {
+      // 额外安全检查：文件名长度限制
+      if (file.originalname.length > 100) {
+        cb(new Error('文件名过长'));
+        return;
+      }
+
+      // 防止路径遍历攻击
+      if (file.originalname.includes('..') || file.originalname.includes('/') || file.originalname.includes('\\')) {
+        cb(new Error('文件名包含非法字符'));
+        return;
+      }
+
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'));
+      cb(new Error('只允许上传图片文件 (JPEG, PNG, GIF, WebP)'));
     }
   }
 });
 
-app.use('/api/upload', upload.single('avatar'));
+app.use('/api/upload', uploadLimiter, upload.single('avatar'));
 
 // API路由
 app.use('/api/characters', charactersRouter);
@@ -105,11 +160,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'AI Character Roleplay API is running' });
 });
 
-// 错误处理中间件
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', error);
-  res.status(500).json({ error: 'Internal server error' });
-});
+// 404处理 - 必须在所有路由之后
+app.use(notFoundHandler);
+
+// 错误恢复处理
+app.use(errorRecoveryHandler);
+
+// 全局错误处理 - 必须在最后
+app.use(globalErrorHandler);
 
 // 启动服务器
 async function startServer() {

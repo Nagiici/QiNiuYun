@@ -1,10 +1,13 @@
 import express from 'express';
 import { DatabaseService } from '../database';
+import { validate, validateParams, characterSchema, idParamSchema } from '../middleware/validation';
+import { createCharacterLimiter } from '../middleware/rateLimiter';
+import { mediumCacheMiddleware, CacheManager } from '../middleware/cache';
 
 export const charactersRouter = express.Router();
 
 // 获取所有角色
-charactersRouter.get('/', async (req, res) => {
+charactersRouter.get('/', mediumCacheMiddleware, async (req, res) => {
   try {
     const characters = await DatabaseService.getAllCharacters();
     res.json(characters);
@@ -15,7 +18,7 @@ charactersRouter.get('/', async (req, res) => {
 });
 
 // 获取单个角色
-charactersRouter.get('/:id', async (req, res) => {
+charactersRouter.get('/:id', validateParams(idParamSchema), mediumCacheMiddleware, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const character = await DatabaseService.getCharacterById(id);
@@ -32,7 +35,7 @@ charactersRouter.get('/:id', async (req, res) => {
 });
 
 // 创建新角色
-charactersRouter.post('/', async (req, res) => {
+charactersRouter.post('/', createCharacterLimiter, validate(characterSchema), async (req, res) => {
   try {
     const {
       name,
@@ -85,6 +88,10 @@ charactersRouter.post('/', async (req, res) => {
     };
 
     const newCharacter = await DatabaseService.createCharacter(characterData);
+
+    // 清理角色列表缓存
+    CacheManager.clearCharacterCache();
+
     res.status(201).json(newCharacter);
   } catch (error) {
     console.error('Error creating character:', error);
@@ -94,7 +101,7 @@ charactersRouter.post('/', async (req, res) => {
 });
 
 // 更新角色
-charactersRouter.put('/:id', async (req, res) => {
+charactersRouter.put('/:id', validateParams(idParamSchema), validate(characterSchema), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const character = await DatabaseService.getCharacterById(id);
@@ -156,7 +163,7 @@ charactersRouter.put('/:id', async (req, res) => {
 });
 
 // 删除角色
-charactersRouter.delete('/:id', async (req, res) => {
+charactersRouter.delete('/:id', validateParams(idParamSchema), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
 

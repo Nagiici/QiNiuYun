@@ -140,6 +140,9 @@ export async function initDatabase() {
   // 插入一些预设角色数据
   await insertDefaultCharacters();
 
+  // 创建性能优化索引
+  await createIndexes();
+
   console.log('✅ Database initialized successfully');
 }
 
@@ -197,6 +200,39 @@ async function insertDefaultCharacters() {
       ]);
     }
   }
+}
+
+// 创建数据库索引以优化查询性能
+async function createIndexes() {
+  const indexes = [
+    // 角色表索引
+    'CREATE INDEX IF NOT EXISTS idx_characters_name ON characters(name)',
+    'CREATE INDEX IF NOT EXISTS idx_characters_created_at ON characters(created_at)',
+    'CREATE INDEX IF NOT EXISTS idx_characters_is_public ON characters(is_public)',
+
+    // 聊天会话索引
+    'CREATE INDEX IF NOT EXISTS idx_chat_sessions_character_id ON chat_sessions(character_id)',
+    'CREATE INDEX IF NOT EXISTS idx_chat_sessions_created_at ON chat_sessions(created_at)',
+
+    // 聊天消息索引
+    'CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON chat_messages(session_id)',
+    'CREATE INDEX IF NOT EXISTS idx_chat_messages_timestamp ON chat_messages(timestamp)',
+    'CREATE INDEX IF NOT EXISTS idx_chat_messages_sender ON chat_messages(sender)',
+
+    // 角色版本索引
+    'CREATE INDEX IF NOT EXISTS idx_character_versions_character_name ON character_versions(character_name)',
+    'CREATE INDEX IF NOT EXISTS idx_character_versions_created_at ON character_versions(created_at)'
+  ];
+
+  for (const indexSQL of indexes) {
+    try {
+      await dbRun(indexSQL);
+    } catch (error) {
+      console.warn('Index creation warning:', error);
+    }
+  }
+
+  console.log('✅ Database indexes created successfully');
 }
 
 // 数据库查询辅助函数

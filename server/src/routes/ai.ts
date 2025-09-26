@@ -1,6 +1,10 @@
 import express from 'express';
 import axios from 'axios';
 import FormData from 'form-data';
+import { validate, chatMessageSchema, aiConfigSchema } from '../middleware/validation';
+import { aiChatLimiter, configLimiter } from '../middleware/rateLimiter';
+import { longCacheMiddleware, CacheManager } from '../middleware/cache';
+import { AIServiceManager } from '../services/circuitBreaker';
 import { DatabaseService } from '../database';
 
 export const aiRouter = express.Router();
@@ -26,7 +30,7 @@ const AI_CONFIG = {
 };
 
 // AI对话生成
-aiRouter.post('/chat', async (req, res) => {
+aiRouter.post('/chat', aiChatLimiter, validate(chatMessageSchema), async (req, res) => {
   try {
     const { message, character_id, session_id, character_data } = req.body;
 
@@ -843,10 +847,56 @@ function buildEnhancedSystemPrompt(character: any, personalityData: any, example
   return prompt;
 }
 
+// =============== AI断路器状态 ===============
+
+// 获取断路器状态
+aiRouter.get('/circuit-breaker/status', (req, res) => {
+  try {
+    const stats = AIServiceManager.getCircuitBreakerStats();
+    res.json({
+      success: true,
+      data: stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting circuit breaker stats:', error);
+    res.status(500).json({ error: 'Failed to get circuit breaker status' });
+  }
+});
+
+// 重置特定提供商的断路器
+aiRouter.post('/circuit-breaker/reset/:provider', (req, res) => {
+  try {
+    const { provider } = req.params;
+    AIServiceManager.resetCircuitBreaker(provider);
+    res.json({
+      success: true,
+      message: `Circuit breaker for ${provider} has been reset`
+    });
+  } catch (error) {
+    console.error('Error resetting circuit breaker:', error);
+    res.status(500).json({ error: 'Failed to reset circuit breaker' });
+  }
+});
+
+// 重置所有断路器
+aiRouter.post('/circuit-breaker/reset-all', (req, res) => {
+  try {
+    AIServiceManager.resetAllCircuitBreakers();
+    res.json({
+      success: true,
+      message: 'All circuit breakers have been reset'
+    });
+  } catch (error) {
+    console.error('Error resetting all circuit breakers:', error);
+    res.status(500).json({ error: 'Failed to reset all circuit breakers' });
+  }
+});
+
 // =============== AI配置管理 ===============
 
 // 获取当前AI配置
-aiRouter.get('/config', async (req, res) => {
+aiRouter.get('/config', longCacheMiddleware, async (req, res) => {
   try {
     // 从数据库获取保存的配置，如果没有则使用默认配置
     const savedConfig = await DatabaseService.getAiConfiguration();
@@ -860,23 +910,24 @@ aiRouter.get('/config', async (req, res) => {
         temperature: 0.7,
         providers: {
           groq: {
-            apiKey: AI_CONFIG.GROQ_API_KEY ? '****' : '',
+            configured: !!AI_CONFIG.GROQ_API_KEY,
             model: 'llama-3.1-70b-versatile'
           },
           openai: {
-            apiKey: AI_CONFIG.OPENAI_API_KEY ? '****' : '',
+            configured: !!AI_CONFIG.OPENAI_API_KEY,
             model: 'gpt-4o-mini'
           },
           cohere: {
-            apiKey: AI_CONFIG.COHERE_API_KEY ? '****' : '',
+            configured: !!AI_CONFIG.COHERE_API_KEY,
             model: 'command-r-plus'
           },
           anthropic: {
-            apiKey: AI_CONFIG.ANTHROPIC_API_KEY ? '****' : '',
+            configured: !!AI_CONFIG.ANTHROPIC_API_KEY,
             model: 'claude-3-5-sonnet-20241022'
           },
           ollama: {
-            baseURL: AI_CONFIG.OLLAMA_URL,
+            configured: !!AI_CONFIG.OLLAMA_URL,
+            baseURL: AI_CONFIG.OLLAMA_URL ? 'configured' : 'not configured',
             model: 'llama3.1:8b'
           }
         }
@@ -890,7 +941,7 @@ aiRouter.get('/config', async (req, res) => {
 });
 
 // 更新AI配置
-aiRouter.post('/config', async (req, res) => {
+aiRouter.post('/config', configLimiter, validate(aiConfigSchema), async (req, res) => {
   try {
     const { currentProvider, temperature, providers } = req.body;
 
