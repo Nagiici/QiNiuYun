@@ -1,3 +1,5 @@
+# ⚠️ 开发前请务必详读Develop Standard.md！！！
+
 # 🎭 AI Character Roleplay Website
 
 一个功能完整的AI角色扮演平台，用户可以通过语音和文本与AI角色进行互动。基于现代Web技术构建，支持多种AI提供商集成。
