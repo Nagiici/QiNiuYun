@@ -339,7 +339,14 @@ const sendUserMessage = async () => {
   }
 
   try {
-    await chatStore.sendMessage(content);
+    // 传递角色信息，以便在没有会话时自动创建
+    const character = currentCharacter.value;
+    await chatStore.sendMessage(
+      content,
+      'text',
+      character?.id,
+      character?.name
+    );
     scrollToBottom();
   } catch (error) {
     console.error('Failed to send message:', error);
@@ -428,20 +435,23 @@ const initializeChat = async () => {
     try {
       globalStore.setLoading(true, '正在加载角色信息...');
 
-      // 清空消息输入框，避免重复消息显示
+      // 强制清空消息输入框，避免重复消息显示
       newMessage.value = '';
+
+      // 重置输入框高度
+      if (messageInput.value) {
+        messageInput.value.style.height = 'auto';
+      }
 
       // 获取角色信息
       const character = await charactersStore.fetchCharacterById(Number(characterId));
       globalStore.setCurrentCharacter(character);
 
-      // 检查是否已经有当前会话且消息已加载（避免重复加载）
-      if (chatStore.currentSession &&
-          chatStore.currentSession.character_id === Number(characterId) &&
-          chatStore.messages.length > 0) {
-        // 已有会话数据，无需重新加载
-        console.log('Session already loaded, skipping reload');
-      } else {
+      // 检查是否需要切换到新角色（避免重复加载相同角色的数据）
+      const shouldLoadNewSession = !chatStore.currentSession ||
+                                  chatStore.currentSession.character_id !== Number(characterId);
+
+      if (shouldLoadNewSession) {
         // 检查是否有现有会话
         const existingSession = chatStore.sessions.find(s => s.character_id === Number(characterId));
 
@@ -449,8 +459,8 @@ const initializeChat = async () => {
           // 如果找到现有会话，加载该会话的消息
           await chatStore.loadSessionMessages(existingSession.id);
         } else {
-          // 创建新会话
-          await chatStore.createSession(Number(characterId), character.name);
+          // 不立即创建新会话，等用户发送第一条消息时再创建
+          chatStore.clearCurrentSession();
         }
       }
     } catch (error) {
@@ -469,6 +479,13 @@ const initializeChat = async () => {
 // 监听路由参数变化，当角色ID变化时重新初始化聊天
 watch(() => route.params.characterId, async (newCharacterId, oldCharacterId) => {
   if (newCharacterId && newCharacterId !== oldCharacterId) {
+    // 立即清理输入框，避免重复显示
+    newMessage.value = '';
+
+    // 清理当前聊天状态
+    chatStore.clearCurrentSession();
+
+    // 重新初始化聊天
     await initializeChat();
   }
 });

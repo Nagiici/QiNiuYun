@@ -84,9 +84,15 @@ export const useChatStore = defineStore('chat', () => {
   };
 
   // 发送消息
-  const sendMessage = async (content: string, messageType: 'text' | 'voice' = 'text') => {
+  const sendMessage = async (content: string, messageType: 'text' | 'voice' = 'text', characterId?: number, characterName?: string) => {
+    // 如果没有活动会话，需要先创建一个（但只在用户实际发送消息时）
     if (!currentSession.value) {
-      throw new Error('No active session');
+      if (!characterId || !characterName) {
+        throw new Error('Character ID and name required to create new session');
+      }
+
+      // 创建新会话
+      await createSession(characterId, characterName);
     }
 
     const userMessage: ChatMessage = {

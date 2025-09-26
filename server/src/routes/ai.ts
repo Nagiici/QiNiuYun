@@ -50,9 +50,8 @@ aiRouter.post('/chat', async (req, res) => {
     // 构建AI提示词（包含会话ID以支持记忆功能）
     const aiResponse = await generateAIResponse(message, character, session_id);
 
-    // 只有正常聊天时才保存消息（测试预览时不保存）
+    // 只有正常聊天时才保存AI回复消息（用户消息已在前端保存，避免重复）
     if (session_id && character_id !== 999) {
-      await DatabaseService.addChatMessage(session_id, 'user', message, 'text');
       await DatabaseService.addChatMessage(session_id, 'ai', aiResponse, 'text');
     }
 

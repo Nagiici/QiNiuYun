@@ -183,7 +183,9 @@ class RadarChart {
     const ctx = this.ctx;
     const levels = 5;
 
-    ctx.strokeStyle = 'rgba(226, 232, 240, 1)';
+    // 动态获取网格颜色 - 根据主题调整
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+    ctx.strokeStyle = isDarkTheme ? 'rgba(107, 114, 128, 0.6)' : 'rgba(226, 232, 240, 1)';
     ctx.lineWidth = 1;
 
     // 绘制同心多边形
@@ -222,7 +224,9 @@ class RadarChart {
 
   private drawLabels() {
     const ctx = this.ctx;
-    ctx.fillStyle = 'rgba(30, 41, 59, 1)';
+    // 动态获取标签文字颜色 - 根据主题调整
+    const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+    ctx.fillStyle = isDarkTheme ? 'rgba(243, 244, 246, 0.9)' : 'rgba(30, 41, 59, 1)';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -321,6 +325,33 @@ onMounted(async () => {
       radarChart = new RadarChart(ctx, 280, 280);
       updateRadarChart();
     }
+  }
+
+  // 监听主题变化，当主题切换时重绘雷达图
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+        // 主题变化时重绘雷达图
+        nextTick(() => {
+          updateRadarChart();
+        });
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+  });
+
+  // 组件卸载时清理观察器
+  const cleanup = () => {
+    observer.disconnect();
+  };
+
+  // 在组件卸载时清理
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', cleanup);
   }
 });
 

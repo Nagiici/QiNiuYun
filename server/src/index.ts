@@ -10,6 +10,7 @@ import { initDatabase } from './database';
 import { charactersRouter } from './routes/characters';
 import { chatsRouter } from './routes/chats';
 import { aiRouter } from './routes/ai';
+import { systemRouter } from './routes/system';
 
 dotenv.config();
 
@@ -66,6 +67,7 @@ app.use('/api/upload', upload.single('avatar'));
 app.use('/api/characters', charactersRouter);
 app.use('/api/chats', chatsRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/system', systemRouter);
 
 // WebSocket连接处理
 wss.on('connection', (ws) => {

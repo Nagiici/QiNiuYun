@@ -476,7 +476,11 @@ const editCharacter = (character: any) => {
 const selectCharacter = (character: any) => {
   // 清理当前会话数据，避免数据混乱
   chatStore.clearCurrentSession();
+
+  // 设置当前角色
   globalStore.setCurrentCharacter(character);
+
+  // 跳转到聊天页面
   router.push(`/chat/${character.id}`);
 };
 

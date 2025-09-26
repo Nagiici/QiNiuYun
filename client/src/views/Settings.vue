@@ -828,6 +828,42 @@
               </div>
             </div>
 
+            <!-- 缓存状态信息 -->
+            <div class="card bg-base-100 shadow-lg border border-base-300">
+              <div class="card-body">
+                <h3 class="card-title text-lg mb-4 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  缓存状态
+                  <button @click="refreshCacheInfo" class="btn btn-ghost btn-xs ml-auto" :disabled="loadingCacheInfo">
+                    <span v-if="loadingCacheInfo" class="loading loading-spinner loading-xs"></span>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                </h3>
+
+                <div class="stats stats-vertical shadow-none bg-base-200/50 rounded-lg">
+                  <div class="stat px-4 py-2">
+                    <div class="stat-title text-xs">本地存储</div>
+                    <div class="stat-value text-sm">{{ cacheInfo.localStorageSize }} KB</div>
+                    <div class="stat-desc text-xs">{{ cacheInfo.localStorageItems }} 项</div>
+                  </div>
+                  <div class="stat px-4 py-2">
+                    <div class="stat-title text-xs">服务器缓存</div>
+                    <div class="stat-value text-sm">{{ cacheInfo.serverCacheSize }} KB</div>
+                    <div class="stat-desc text-xs">{{ cacheInfo.serverCacheFiles }} 文件</div>
+                  </div>
+                  <div class="stat px-4 py-2">
+                    <div class="stat-title text-xs">内存使用</div>
+                    <div class="stat-value text-sm">{{ cacheInfo.memoryUsage }} MB</div>
+                    <div class="stat-desc text-xs">堆内存</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 快捷操作 -->
             <div class="card bg-base-100 shadow-lg border border-base-300">
               <div class="card-body">
@@ -841,11 +877,12 @@
                     清除所有聊天记录
                   </button>
 
-                  <button @click="clearCache" class="btn btn-ghost w-full justify-start text-left">
+                  <button @click="showClearCacheModal" class="btn btn-ghost w-full justify-start text-left">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     清除缓存数据
+                    <div class="badge badge-warning badge-sm ml-auto">{{ cacheInfo.totalSize }} KB</div>
                   </button>
 
                   <router-link to="/create" class="btn btn-ghost w-full justify-start text-left">
@@ -858,6 +895,123 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 清除缓存确认模态框 -->
+    <div v-if="showClearCacheDialog" class="modal modal-open">
+      <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-xl mb-4 flex items-center gap-2 text-warning">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          清除缓存数据确认
+        </h3>
+
+        <div class="py-4">
+          <p class="text-base-content/80 mb-4">
+            此操作将清除以下缓存数据，<span class="font-semibold text-error">此操作不可撤销</span>：
+          </p>
+
+          <div class="space-y-4">
+            <!-- 前端缓存清理 -->
+            <div class="bg-base-200 p-4 rounded-lg">
+              <h4 class="font-semibold text-primary mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                前端浏览器缓存
+              </h4>
+              <ul class="text-sm text-base-content/70 space-y-1 ml-6">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-error rounded-full"></span>
+                  临时聊天数据缓存
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-error rounded-full"></span>
+                  AI配置本地备份
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-error rounded-full"></span>
+                  语音服务配置缓存
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-error rounded-full"></span>
+                  临时会话存储 (SessionStorage)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-error rounded-full"></span>
+                  浏览器静态资源缓存
+                </li>
+              </ul>
+            </div>
+
+            <!-- 后端缓存清理 -->
+            <div class="bg-base-200 p-4 rounded-lg">
+              <h4 class="font-semibold text-secondary mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                </svg>
+                服务器端缓存 (如果可用)
+              </h4>
+              <ul class="text-sm text-base-content/70 space-y-1 ml-6">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-warning rounded-full"></span>
+                  API响应缓存
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-warning rounded-full"></span>
+                  临时文件缓存
+                </li>
+              </ul>
+            </div>
+
+            <!-- 保留的数据 -->
+            <div class="bg-success/10 p-4 rounded-lg border border-success/30">
+              <h4 class="font-semibold text-success mb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                以下数据将被保留
+              </h4>
+              <ul class="text-sm text-base-content/70 space-y-1 ml-6">
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-success rounded-full"></span>
+                  用户偏好设置 (语言、主题等)
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-success rounded-full"></span>
+                  当前选中的角色信息
+                </li>
+                <li class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 bg-success rounded-full"></span>
+                  数据库中的永久数据 (角色、聊天记录)
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="alert alert-warning mt-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <div>
+              <h3 class="font-bold">清理完成后建议</h3>
+              <div class="text-sm">清除缓存后，您可能需要重新配置某些设置，页面可能需要重新加载。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-action">
+          <button @click="showClearCacheDialog = false" class="btn btn-ghost">取消</button>
+          <button @click="confirmClearCache" class="btn btn-warning" :disabled="clearingCache">
+            <span v-if="clearingCache" class="loading loading-spinner loading-sm mr-2"></span>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            {{ clearingCache ? '正在清除...' : '确认清除缓存' }}
+          </button>
         </div>
       </div>
     </div>
@@ -878,6 +1032,18 @@ const currentTheme = ref('light');
 const testingProvider = ref('');
 const testingTts = ref(false);
 const testingStt = ref(false);
+const showClearCacheDialog = ref(false);
+const clearingCache = ref(false);
+const loadingCacheInfo = ref(false);
+
+const cacheInfo = reactive({
+  localStorageSize: 0,
+  localStorageItems: 0,
+  serverCacheSize: 0,
+  serverCacheFiles: 0,
+  memoryUsage: 0,
+  totalSize: 0
+});
 
 const settings = reactive({
   language: 'zh-CN',
@@ -967,6 +1133,16 @@ const getSpeedLabel = (speed: number) => {
   return labels[speed - 1] || '正常';
 };
 
+const getLanguageDisplayName = (languageCode: string) => {
+  const languageNames = {
+    'zh-CN': '简体中文',
+    'zh-TW': '繁體中文',
+    'en-US': 'English',
+    'ja-JP': '日本語'
+  };
+  return languageNames[languageCode as keyof typeof languageNames] || languageCode;
+};
+
 const setTheme = (theme: string) => {
   currentTheme.value = theme;
   document.documentElement.setAttribute('data-theme', theme);
@@ -975,11 +1151,30 @@ const setTheme = (theme: string) => {
 };
 
 const saveSettings = async () => {
-  // 保存设置到 localStorage
-  localStorage.setItem('userSettings', JSON.stringify(settings));
-  await saveAiConfiguration();
-  await saveSpeechConfiguration();
-  globalStore.showNotification('设置已保存', 'success');
+  try {
+    globalStore.setLoading(true, '正在保存设置...');
+
+    // 保存设置到 localStorage
+    localStorage.setItem('userSettings', JSON.stringify(settings));
+
+    // 应用语言设置
+    const previousLanguage = document.documentElement.lang || 'zh-CN';
+    if (settings.language !== previousLanguage) {
+      document.documentElement.lang = settings.language;
+      // 这里可以添加国际化逻辑，比如加载对应的语言包
+      globalStore.showNotification(`语言已切换为 ${getLanguageDisplayName(settings.language)}`, 'info');
+    }
+
+    await saveAiConfiguration();
+    await saveSpeechConfiguration();
+
+    globalStore.showNotification('设置已保存', 'success');
+  } catch (error) {
+    console.error('Failed to save settings:', error);
+    globalStore.showNotification('保存设置失败，请重试', 'error');
+  } finally {
+    globalStore.setLoading(false);
+  }
 };
 
 const resetSettings = () => {
@@ -1028,20 +1223,58 @@ const exportData = () => {
   }
 };
 
-const clearAllHistory = () => {
+const clearAllHistory = async () => {
   if (confirm('确定要清除所有聊天记录吗？此操作不可撤销。')) {
-    // 清除聊天历史
-    chatStore.sessions.splice(0);
-    localStorage.removeItem('chatHistory');
-    localStorage.removeItem('chatSessions');
+    try {
+      globalStore.setLoading(true, '正在清除聊天记录...');
 
-    globalStore.showNotification('所有聊天记录已清除', 'info');
+      // 清除后端数据库中的聊天记录
+      const sessions = chatStore.sessions.slice();
+      for (const session of sessions) {
+        await chatStore.deleteSession(session.id);
+      }
+
+      // 清除前端聊天历史
+      chatStore.sessions.splice(0);
+      chatStore.clearCurrentSession();
+      localStorage.removeItem('chatHistory');
+      localStorage.removeItem('chatSessions');
+      localStorage.removeItem('currentCharacter');
+
+      globalStore.showNotification('所有聊天记录已清除', 'success');
+    } catch (error) {
+      console.error('Failed to clear chat history:', error);
+      globalStore.showNotification('清除聊天记录失败，请重试', 'error');
+    } finally {
+      globalStore.setLoading(false);
+    }
   }
 };
 
-const clearCache = () => {
-  if (confirm('确定要清除缓存数据吗？')) {
-    // 清除缓存但保留重要设置
+// 显示清除缓存确认对话框
+const showClearCacheModal = () => {
+  showClearCacheDialog.value = true;
+};
+
+// 确认清除缓存
+const confirmClearCache = async () => {
+  clearingCache.value = true;
+
+  try {
+    // 清除后端缓存（如果有相关API端点的话）
+    let backendClearSuccess = false;
+    try {
+      await api.post('/system/clear-cache');
+      backendClearSuccess = true;
+      console.log('Backend cache cleared successfully');
+    } catch (error) {
+      console.warn('Backend cache clear not available:', error);
+    }
+
+    // 获取当前缓存大小信息（用于统计）
+    const beforeCacheSize = await getCacheSize();
+
+    // 清除前端缓存但保留重要设置
     const keysToKeep = ['theme', 'userSettings', 'currentCharacter'];
     const itemsToKeep: { [key: string]: string | null } = {};
 
@@ -1049,15 +1282,128 @@ const clearCache = () => {
       itemsToKeep[key] = localStorage.getItem(key);
     });
 
+    // 清理localStorage和sessionStorage
     localStorage.clear();
+    sessionStorage.clear();
 
+    // 恢复重要设置
     keysToKeep.forEach(key => {
       if (itemsToKeep[key] !== null) {
         localStorage.setItem(key, itemsToKeep[key]!);
       }
     });
 
-    globalStore.showNotification('缓存已清除', 'info');
+    // 清除浏览器缓存（Service Worker缓存）
+    let browserCacheCleared = false;
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        browserCacheCleared = true;
+        console.log('Browser caches cleared successfully');
+      } catch (error) {
+        console.warn('Failed to clear browser caches:', error);
+      }
+    }
+
+    // 获取清理后的缓存信息
+    const afterCacheSize = await getCacheSize();
+
+    // 关闭对话框
+    showClearCacheDialog.value = false;
+
+    // 显示成功通知
+    const successMessage = buildSuccessMessage(backendClearSuccess, browserCacheCleared, beforeCacheSize, afterCacheSize);
+    globalStore.showNotification(successMessage, 'success');
+
+    // 建议用户刷新页面
+    setTimeout(() => {
+      if (confirm('清除缓存完成！建议刷新页面以获得最佳体验，现在刷新吗？')) {
+        window.location.reload();
+      }
+    }, 2000);
+
+  } catch (error) {
+    console.error('Failed to clear cache:', error);
+    globalStore.showNotification('清除缓存失败，请重试', 'error');
+    showClearCacheDialog.value = false;
+  } finally {
+    clearingCache.value = false;
+  }
+};
+
+// 获取当前缓存大小（估算）
+const getCacheSize = async (): Promise<number> => {
+  try {
+    // 估算localStorage大小
+    let localStorageSize = 0;
+    for (const key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        localStorageSize += localStorage[key].length + key.length;
+      }
+    }
+
+    // 估算sessionStorage大小
+    let sessionStorageSize = 0;
+    for (const key in sessionStorage) {
+      if (sessionStorage.hasOwnProperty(key)) {
+        sessionStorageSize += sessionStorage[key].length + key.length;
+      }
+    }
+
+    return localStorageSize + sessionStorageSize;
+  } catch (error) {
+    console.warn('Failed to calculate cache size:', error);
+    return 0;
+  }
+};
+
+// 构建成功消息
+const buildSuccessMessage = (backendSuccess: boolean, browserSuccess: boolean, beforeSize: number, afterSize: number): string => {
+  const cleared = [];
+
+  if (backendSuccess) cleared.push('服务器缓存');
+  cleared.push('本地存储缓存');
+  if (browserSuccess) cleared.push('浏览器静态缓存');
+
+  const clearedText = cleared.join('、');
+  const sizeText = beforeSize > 0 ? `，释放了约 ${Math.round((beforeSize - afterSize) / 1024)} KB 空间` : '';
+
+  return `缓存清除完成！已清理：${clearedText}${sizeText}`;
+};
+
+// 刷新缓存信息
+const refreshCacheInfo = async () => {
+  loadingCacheInfo.value = true;
+
+  try {
+    // 获取本地存储信息
+    const localSize = await getCacheSize();
+    cacheInfo.localStorageSize = Math.round(localSize / 1024);
+    cacheInfo.localStorageItems = Object.keys(localStorage).length;
+
+    // 获取服务器缓存信息
+    try {
+      const response = await api.get('/system/cache-info');
+      if (response.data.success) {
+        cacheInfo.serverCacheSize = response.data.cacheInfo.totalSizeKB;
+        cacheInfo.serverCacheFiles = response.data.cacheInfo.tempFiles + response.data.cacheInfo.logFiles;
+        cacheInfo.memoryUsage = response.data.cacheInfo.memoryUsageMB.heapUsed;
+      }
+    } catch (error) {
+      console.warn('Failed to get server cache info:', error);
+      cacheInfo.serverCacheSize = 0;
+      cacheInfo.serverCacheFiles = 0;
+      cacheInfo.memoryUsage = 0;
+    }
+
+    // 计算总缓存大小
+    cacheInfo.totalSize = cacheInfo.localStorageSize + cacheInfo.serverCacheSize;
+
+  } catch (error) {
+    console.error('Failed to refresh cache info:', error);
+  } finally {
+    loadingCacheInfo.value = false;
   }
 };
 
@@ -1247,6 +1593,9 @@ onMounted(async () => {
 
   // 恢复语音服务配置
   await loadSpeechConfiguration();
+
+  // 初始加载缓存信息
+  await refreshCacheInfo();
 });
 
 // =============== 语音服务配置管理 ===============

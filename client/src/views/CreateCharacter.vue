@@ -1107,8 +1107,8 @@ const updateTimezoneInfo = () => {
 // 初始化时区信息
 updateTimezoneInfo();
 
-// 每分钟更新时间显示
-setInterval(updateTimezoneInfo, 60000);
+// 每秒更新时间显示（实时显示）
+setInterval(updateTimezoneInfo, 1000);
 
 // =============== 版本管理功能 ===============
 
