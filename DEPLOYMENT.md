@@ -1,3 +1,5 @@
+# ⚠️ 开发前请务必详读Develop Standard.md！！！
+
 # 🚀 AI Character Roleplay Website - Deployment Guide
 
 ## 📋 Production Checklist
@@ -11,25 +13,35 @@
 5. **🎙️ Voice Features** - Speech recognition and text-to-speech
 6. **🧠 AI Core Skills** - Personalized dialogue, emotion recognition, memory management
 
-## 🛠️ **Local Development Setup**
+## 🛠️ 本地开发指南
 
-### Prerequisites
+### 先置开发环境
+
 - Node.js 16+
-- npm or yarn
+- npm
 - Git
 
-### Quick Start
+### 快速启动
+
 ```bash
 # Clone and install
-git clone <your-repo>
-cd QiNiuYun
-npm run install:all
+git clone git@github.com:Nagiici/QiNiuYun.git
 
-# Start development servers
+
+#client端启动
+cd client
+npm install
 npm run dev
+
+#server端启动
+cd server
+npm install
+npm run dev
+
 ```
 
 Access:
+
 - **Frontend**: http://localhost:3001
 - **Backend API**: http://localhost:8080
 - **WebSocket**: ws://localhost:8080
@@ -86,6 +98,7 @@ pm2 start src/index.ts --name "ai-chat-backend"
 #### **Option B: Docker Deployment**
 
 Create `Dockerfile`:
+
 ```dockerfile
 # Frontend build
 FROM node:16-alpine AS frontend-build
@@ -212,6 +225,7 @@ curl -X POST http://localhost:8080/api/ai/emotion \
 ### **Performance Optimization**
 
 1. **Frontend**
+
    ```bash
    # Enable gzip compression
    # Add to nginx.conf:
@@ -220,12 +234,14 @@ curl -X POST http://localhost:8080/api/ai/emotion \
    ```
 
 2. **Backend**
+
    ```bash
    # Add rate limiting
    npm install express-rate-limit
    ```
 
 3. **Database**
+
    ```sql
    -- Add indexes for better performance
    CREATE INDEX idx_messages_session ON chat_messages(session_id);
@@ -260,18 +276,21 @@ docker logs <container-id>
 ## 🎯 **Next Steps & Enhancements**
 
 ### **Immediate Improvements**
+
 - [ ] Add user authentication
 - [ ] Implement character sharing
 - [ ] Add conversation export
 - [ ] Mobile app (React Native/Flutter)
 
 ### **Scalability**
+
 - [ ] Migrate to PostgreSQL
 - [ ] Add Redis for caching
 - [ ] Implement microservices architecture
 - [ ] Add CDN for static assets
 
 ### **Advanced Features**
+
 - [ ] Character image generation (DALL-E/Midjourney)
 - [ ] Multi-language support
 - [ ] Voice cloning for characters
@@ -298,6 +317,7 @@ Your AI Character Roleplay Website is **production-ready** with:
 ## 📞 **Support**
 
 Need help? Check:
+
 1. This deployment guide
 2. `.env.example` for configuration
 3. API endpoint testing examples
