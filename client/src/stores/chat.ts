@@ -11,6 +11,7 @@ export interface ChatMessage {
   voice_url?: string;
   emotion?: string;
   timestamp: string;
+  is_proactive?: boolean;
 }
 
 export interface ChatSession {
@@ -20,6 +21,7 @@ export interface ChatSession {
   last_message: string;
   last_activity: string;
   created_at: string;
+  unread_count?: number;
 }
 
 export const useChatStore = defineStore('chat', () => {
@@ -192,6 +194,26 @@ export const useChatStore = defineStore('chat', () => {
     }
   };
 
+  // 标记会话为已读
+  const markSessionAsRead = async (sessionId: string) => {
+    try {
+      await api.post(`/chats/sessions/${sessionId}/mark-read`);
+
+      // 更新本地状态
+      const sessionIndex = sessions.value.findIndex(s => s.id === sessionId);
+      if (sessionIndex !== -1) {
+        sessions.value[sessionIndex].unread_count = 0;
+      }
+
+      if (currentSession.value?.id === sessionId) {
+        currentSession.value.unread_count = 0;
+      }
+    } catch (error) {
+      console.error('Failed to mark session as read:', error);
+      throw error;
+    }
+  };
+
   return {
     currentSession,
     messages,
@@ -205,5 +227,6 @@ export const useChatStore = defineStore('chat', () => {
     clearCurrentSession,
     deleteSession,
     cleanCorruptedSessions,
+    markSessionAsRead,
   };
 });

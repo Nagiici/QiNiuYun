@@ -12,6 +12,8 @@ import { chatsRouter } from './routes/chats';
 import { aiRouter } from './routes/ai';
 import { systemRouter } from './routes/system';
 import { generalLimiter, uploadLimiter } from './middleware/rateLimiter';
+import { ProactiveChatService } from './services/proactiveChatService';
+import { WebSocketManager } from './services/websocketManager';
 import {
   globalErrorHandler,
   notFoundHandler,
@@ -125,33 +127,68 @@ app.use('/api/ai', aiRouter);
 app.use('/api/system', systemRouter);
 
 // WebSocket连接处理
+const wsManager = WebSocketManager.getInstance();
+
 wss.on('connection', (ws) => {
-  console.log('New WebSocket connection');
+  const connectionId = `ws_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  wsManager.addConnection(ws, connectionId);
+
+  // 发送连接确认
+  ws.send(JSON.stringify({
+    type: 'connection_established',
+    connectionId,
+    timestamp: new Date().toISOString()
+  }));
 
   ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message.toString());
-      console.log('Received:', data);
+      console.log('WebSocket消息:', data);
 
       // 处理不同类型的消息
       switch (data.type) {
-        case 'chat_message':
-          // 处理聊天消息，调用AI生成回复
+        case 'register_session':
+          // 注册会话信息
+          wsManager.setConnectionInfo(connectionId, data.userId, data.sessionId);
+          ws.send(JSON.stringify({
+            type: 'session_registered',
+            userId: data.userId,
+            sessionId: data.sessionId,
+            timestamp: new Date().toISOString()
+          }));
           break;
-        case 'voice_message':
-          // 处理语音消息
+
+        case 'heartbeat':
+          // 心跳保持连接
+          ws.send(JSON.stringify({
+            type: 'heartbeat_response',
+            timestamp: new Date().toISOString()
+          }));
           break;
+
+        case 'request_notification_permission':
+          // 请求通知权限
+          ws.send(JSON.stringify({
+            type: 'notification_permission_response',
+            granted: true,
+            timestamp: new Date().toISOString()
+          }));
+          break;
+
         default:
-          ws.send(JSON.stringify({ error: 'Unknown message type' }));
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Unknown message type',
+            received: data.type
+          }));
       }
     } catch (error) {
-      console.error('WebSocket error:', error);
-      ws.send(JSON.stringify({ error: 'Invalid message format' }));
+      console.error('WebSocket消息处理错误:', error);
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Invalid message format'
+      }));
     }
-  });
-
-  ws.on('close', () => {
-    console.log('WebSocket connection closed');
   });
 });
 
@@ -177,6 +214,14 @@ async function startServer() {
     server.listen(port, () => {
       console.log(`🚀 Server running on http://localhost:${port}`);
       console.log(`📡 WebSocket server running on ws://localhost:${port}`);
+
+      // 启动AI主动聊天服务
+      ProactiveChatService.initialize().then(() => {
+        ProactiveChatService.start();
+        console.log('🤖 AI主动聊天服务已启动');
+      }).catch(error => {
+        console.error('❌ AI主动聊天服务启动失败:', error);
+      });
     });
   } catch (error) {
     console.error('Failed to start server:', error);

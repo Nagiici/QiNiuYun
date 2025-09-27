@@ -445,6 +445,149 @@
             </div>
           </div>
 
+          <!-- AI主动聊天配置 -->
+          <div class="card bg-base-100 shadow-lg border border-base-300">
+            <div class="card-body">
+              <h2 class="card-title text-xl mb-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                AI主动聊天配置
+              </h2>
+
+              <div class="space-y-6">
+                <!-- 启用/禁用主动聊天 -->
+                <div class="form-control">
+                  <label class="label cursor-pointer justify-start gap-4">
+                    <input type="checkbox" v-model="proactiveChatConfig.enabled.value" class="toggle toggle-success">
+                    <div>
+                      <span class="label-text font-medium">启用AI主动聊天</span>
+                      <div class="label-text-alt text-base-content/60">AI会在您不活跃时主动发送消息</div>
+                    </div>
+                  </label>
+                </div>
+
+                <!-- 检查间隔 -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-medium">检查间隔</span>
+                    <span class="label-text-alt">{{ proactiveChatConfig.intervalMinutes.value }} 分钟</span>
+                  </label>
+                  <input
+                    type="range"
+                    v-model.number="proactiveChatConfig.intervalMinutes.value"
+                    min="5"
+                    max="60"
+                    step="5"
+                    class="range range-success range-sm"
+                  />
+                  <div class="w-full flex justify-between text-xs px-2 text-base-content/60">
+                    <span>5分钟</span>
+                    <span>30分钟</span>
+                    <span>60分钟</span>
+                  </div>
+                </div>
+
+                <!-- 不活跃阈值 -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-medium">不活跃阈值</span>
+                    <span class="label-text-alt">{{ proactiveChatConfig.inactivityThreshold.value }} 分钟</span>
+                  </label>
+                  <input
+                    type="range"
+                    v-model.number="proactiveChatConfig.inactivityThreshold.value"
+                    min="10"
+                    max="120"
+                    step="10"
+                    class="range range-success range-sm"
+                  />
+                  <div class="w-full flex justify-between text-xs px-2 text-base-content/60">
+                    <span>10分钟</span>
+                    <span>60分钟</span>
+                    <span>120分钟</span>
+                  </div>
+                  <div class="text-xs text-base-content/60 mt-2">
+                    当您在聊天中不活跃超过此时间时，AI可能会主动发送消息
+                  </div>
+                </div>
+
+                <!-- 每日最大消息数 -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-medium">每日最大主动消息数</span>
+                    <span class="label-text-alt">{{ proactiveChatConfig.maxMessagesPerDay.value }} 条</span>
+                  </label>
+                  <input
+                    type="range"
+                    v-model.number="proactiveChatConfig.maxMessagesPerDay.value"
+                    min="1"
+                    max="20"
+                    step="1"
+                    class="range range-success range-sm"
+                  />
+                  <div class="w-full flex justify-between text-xs px-2 text-base-content/60">
+                    <span>1条</span>
+                    <span>10条</span>
+                    <span>20条</span>
+                  </div>
+                  <div class="text-xs text-base-content/60 mt-2">
+                    限制每天每个角色主动发送的消息数量，避免过度打扰
+                  </div>
+                </div>
+
+                <!-- 保存按钮 -->
+                <div class="form-control">
+                  <button @click="updateProactiveChatConfig" :disabled="updatingProactiveConfig" class="btn btn-primary">
+                    <span v-if="updatingProactiveConfig" class="loading loading-spinner loading-sm mr-2"></span>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {{ updatingProactiveConfig ? '保存中...' : '保存配置' }}
+                  </button>
+                </div>
+
+                <!-- 状态显示 -->
+                <div class="alert" :class="proactiveChatConfig.enabled.value ? 'alert-success' : 'alert-warning'">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <div>
+                    <h3 class="font-bold">{{ proactiveChatStatusMessage.title }}</h3>
+                    <div class="text-sm">
+                      <template v-if="Array.isArray(proactiveChatStatusMessage.content)">
+                        <div v-for="(line, index) in proactiveChatStatusMessage.content" :key="index" class="mb-1">
+                          {{ line }}
+                        </div>
+                      </template>
+                      <template v-else>
+                        {{ proactiveChatStatusMessage.content }}
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 快捷操作按钮 -->
+                <div class="flex gap-2">
+                  <button @click="restartProactiveChatService" :disabled="!proactiveChatConfig.enabled.value || restartingService" class="btn btn-outline btn-sm">
+                    <span v-if="restartingService" class="loading loading-spinner loading-xs mr-2"></span>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {{ restartingService ? '重启中...' : '重启服务' }}
+                  </button>
+                  <button @click="triggerProactiveCheck" :disabled="!proactiveChatConfig.enabled.value || triggeringCheck" class="btn btn-outline btn-sm">
+                    <span v-if="triggeringCheck" class="loading loading-spinner loading-xs mr-2"></span>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    {{ triggeringCheck ? '检查中...' : '手动触发检查' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- AI提供商配置 -->
           <div class="card bg-base-100 shadow-lg border border-base-300">
             <div class="card-body">
@@ -1019,7 +1162,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue';
 import { useGlobalStore } from '@/stores/global';
 import { useChatStore } from '@/stores/chat';
 import { api } from '@/utils/api';
@@ -1035,6 +1178,9 @@ const testingStt = ref(false);
 const showClearCacheDialog = ref(false);
 const clearingCache = ref(false);
 const loadingCacheInfo = ref(false);
+const restartingService = ref(false);
+const triggeringCheck = ref(false);
+const updatingProactiveConfig = ref(false);
 
 const cacheInfo = reactive({
   localStorageSize: 0,
@@ -1126,6 +1272,82 @@ const speechConfig = reactive({
     }
   }
 });
+
+// 初始化主动聊天配置 - 优先从本地存储加载，避免闪烁
+const initProactiveChatConfig = () => {
+  const savedConfig = localStorage.getItem('proactiveChatConfig');
+  if (savedConfig) {
+    try {
+      return JSON.parse(savedConfig);
+    } catch (error) {
+      console.error('Failed to parse stored proactive chat config:', error);
+    }
+  }
+  // 默认配置
+  return {
+    enabled: true,
+    intervalMinutes: 15,
+    inactivityThreshold: 30,
+    maxMessagesPerDay: 5
+  };
+};
+
+// 使用 ref 包装每个配置项，确保响应式
+const proactiveChatConfig = {
+  enabled: ref(true),
+  intervalMinutes: ref(15),
+  inactivityThreshold: ref(30),
+  maxMessagesPerDay: ref(5)
+};
+
+// 初始化配置
+const initConfig = initProactiveChatConfig();
+proactiveChatConfig.enabled.value = initConfig.enabled;
+proactiveChatConfig.intervalMinutes.value = initConfig.intervalMinutes;
+proactiveChatConfig.inactivityThreshold.value = initConfig.inactivityThreshold;
+proactiveChatConfig.maxMessagesPerDay.value = initConfig.maxMessagesPerDay;
+
+// 计算属性确保状态消息实时更新
+const proactiveChatStatusMessage = computed(() => {
+  if (!proactiveChatConfig.enabled.value) {
+    return {
+      title: '主动聊天已禁用',
+      content: '启用后AI会在您不活跃时主动与您聊天'
+    };
+  }
+
+  return {
+    title: '主动聊天已启用',
+    content: [
+      `AI将每 ${proactiveChatConfig.intervalMinutes.value} 分钟检查一次`,
+      `当您不活跃超过 ${proactiveChatConfig.inactivityThreshold.value} 分钟时主动发送消息`,
+      `每天最多发送 ${proactiveChatConfig.maxMessagesPerDay.value} 条主动消息`
+    ]
+  };
+});
+
+// 监听配置变化，确保实时更新
+watch(
+  () => [
+    proactiveChatConfig.intervalMinutes.value,
+    proactiveChatConfig.inactivityThreshold.value,
+    proactiveChatConfig.maxMessagesPerDay.value,
+    proactiveChatConfig.enabled.value
+  ],
+  (newValues, oldValues) => {
+    console.log('🔄 Proactive chat config changed:', {
+      intervalMinutes: newValues[0],
+      inactivityThreshold: newValues[1],
+      maxMessagesPerDay: newValues[2],
+      enabled: newValues[3]
+    });
+
+    nextTick(() => {
+      console.log('✨ Status message updated:', proactiveChatStatusMessage.value);
+    });
+  },
+  { deep: true, immediate: true }
+);
 
 // 方法
 const getSpeedLabel = (speed: number) => {
@@ -1594,6 +1816,9 @@ onMounted(async () => {
   // 恢复语音服务配置
   await loadSpeechConfiguration();
 
+  // 恢复主动聊天配置
+  await loadProactiveChatConfiguration();
+
   // 初始加载缓存信息
   await refreshCacheInfo();
 });
@@ -1724,6 +1949,145 @@ const loadSpeechConfiguration = async () => {
     } catch (error) {
       console.error('Failed to load speech configuration from localStorage:', error);
     }
+  }
+};
+
+// =============== 主动聊天配置管理 ===============
+
+// 更新主动聊天配置
+const updateProactiveChatConfig = async () => {
+  updatingProactiveConfig.value = true;
+  try {
+    // 创建一个明确的配置对象，确保发送完整的配置
+    const configToSend = {
+      enabled: proactiveChatConfig.enabled.value,
+      intervalMinutes: Number(proactiveChatConfig.intervalMinutes.value),
+      inactivityThreshold: Number(proactiveChatConfig.inactivityThreshold.value),
+      maxMessagesPerDay: Number(proactiveChatConfig.maxMessagesPerDay.value)
+    };
+
+    console.log('Sending proactive chat config:', configToSend);
+    const response = await api.put('/chats/proactive/config', configToSend);
+    if (response.data.success && response.data.config) {
+      // 使用 .value 更新响应式数据
+      proactiveChatConfig.enabled.value = Boolean(response.data.config.enabled);
+      proactiveChatConfig.intervalMinutes.value = Number(response.data.config.intervalMinutes);
+      proactiveChatConfig.inactivityThreshold.value = Number(response.data.config.inactivityThreshold);
+      proactiveChatConfig.maxMessagesPerDay.value = Number(response.data.config.maxMessagesPerDay);
+
+      // 同时保存到本地存储
+      const configForStorage = {
+        enabled: proactiveChatConfig.enabled.value,
+        intervalMinutes: proactiveChatConfig.intervalMinutes.value,
+        inactivityThreshold: proactiveChatConfig.inactivityThreshold.value,
+        maxMessagesPerDay: proactiveChatConfig.maxMessagesPerDay.value
+      };
+      localStorage.setItem('proactiveChatConfig', JSON.stringify(configForStorage));
+
+      globalStore.showNotification('主动聊天配置已保存', 'success');
+      console.log('✅ Config updated and saved:', proactiveChatConfig);
+    }
+  } catch (error: any) {
+    console.error('Failed to update proactive chat config:', error);
+    globalStore.showNotification(
+      `更新主动聊天配置失败: ${error.response?.data?.error || error.message}`,
+      'error'
+    );
+  } finally {
+    updatingProactiveConfig.value = false;
+  }
+};
+
+// 加载主动聊天配置
+const loadProactiveChatConfiguration = async () => {
+  try {
+    console.log('🔄 Loading proactive chat configuration from server...');
+    const response = await api.get('/chats/proactive/config');
+    console.log('📥 Server response:', response.data);
+
+    if (response.data) {
+      // 使用 .value 更新响应式数据
+      proactiveChatConfig.enabled.value = Boolean(response.data.enabled);
+      proactiveChatConfig.intervalMinutes.value = Number(response.data.intervalMinutes);
+      proactiveChatConfig.inactivityThreshold.value = Number(response.data.inactivityThreshold);
+      proactiveChatConfig.maxMessagesPerDay.value = Number(response.data.maxMessagesPerDay);
+
+      console.log('✅ Proactive chat config updated:', {
+        enabled: proactiveChatConfig.enabled.value,
+        intervalMinutes: proactiveChatConfig.intervalMinutes.value,
+        inactivityThreshold: proactiveChatConfig.inactivityThreshold.value,
+        maxMessagesPerDay: proactiveChatConfig.maxMessagesPerDay.value
+      });
+
+      // 同时保存到本地存储作为备份
+      const configForStorage = {
+        enabled: proactiveChatConfig.enabled.value,
+        intervalMinutes: proactiveChatConfig.intervalMinutes.value,
+        inactivityThreshold: proactiveChatConfig.inactivityThreshold.value,
+        maxMessagesPerDay: proactiveChatConfig.maxMessagesPerDay.value
+      };
+      localStorage.setItem('proactiveChatConfig', JSON.stringify(configForStorage));
+    }
+  } catch (error) {
+    console.error('❌ Failed to load proactive chat configuration:', error);
+
+    // 如果后端加载失败，尝试从本地存储加载
+    const savedConfig = localStorage.getItem('proactiveChatConfig');
+    if (savedConfig) {
+      try {
+        const parsedConfig = JSON.parse(savedConfig);
+        proactiveChatConfig.enabled.value = Boolean(parsedConfig.enabled);
+        proactiveChatConfig.intervalMinutes.value = Number(parsedConfig.intervalMinutes);
+        proactiveChatConfig.inactivityThreshold.value = Number(parsedConfig.inactivityThreshold);
+        proactiveChatConfig.maxMessagesPerDay.value = Number(parsedConfig.maxMessagesPerDay);
+        console.log('📱 Loaded config from localStorage:', {
+          enabled: proactiveChatConfig.enabled.value,
+          intervalMinutes: proactiveChatConfig.intervalMinutes.value,
+          inactivityThreshold: proactiveChatConfig.inactivityThreshold.value,
+          maxMessagesPerDay: proactiveChatConfig.maxMessagesPerDay.value
+        });
+      } catch (parseError) {
+        console.error('Failed to parse stored config:', parseError);
+      }
+    }
+  }
+};
+
+// 重启主动聊天服务
+const restartProactiveChatService = async () => {
+  restartingService.value = true;
+  try {
+    const response = await api.post('/chats/proactive/restart');
+    if (response.data.success) {
+      globalStore.showNotification('主动聊天服务已重启', 'success');
+    }
+  } catch (error: any) {
+    console.error('Failed to restart proactive chat service:', error);
+    globalStore.showNotification(
+      `重启主动聊天服务失败: ${error.response?.data?.error || error.message}`,
+      'error'
+    );
+  } finally {
+    restartingService.value = false;
+  }
+};
+
+// 手动触发主动聊天检查
+const triggerProactiveCheck = async () => {
+  triggeringCheck.value = true;
+  try {
+    const response = await api.post('/chats/proactive/trigger');
+    if (response.data) {
+      globalStore.showNotification('主动聊天检查已触发', 'success');
+    }
+  } catch (error: any) {
+    console.error('Failed to trigger proactive check:', error);
+    globalStore.showNotification(
+      `触发主动聊天检查失败: ${error.response?.data?.error || error.message}`,
+      'error'
+    );
+  } finally {
+    triggeringCheck.value = false;
   }
 };
 </script>

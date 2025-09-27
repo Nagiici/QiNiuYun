@@ -69,23 +69,23 @@ export const aiConfigSchema = Joi.object({
   temperature: Joi.number().min(0).max(2).default(0.7),
   providers: Joi.object({
     groq: Joi.object({
-      apiKey: Joi.string().min(10).optional(),
+      apiKey: Joi.string().allow('').optional(),
       model: Joi.string().optional()
     }).optional(),
     openai: Joi.object({
-      apiKey: Joi.string().min(10).optional(),
+      apiKey: Joi.string().allow('').optional(),
       model: Joi.string().optional()
     }).optional(),
     cohere: Joi.object({
-      apiKey: Joi.string().min(10).optional(),
+      apiKey: Joi.string().allow('').optional(),
       model: Joi.string().optional()
     }).optional(),
     anthropic: Joi.object({
-      apiKey: Joi.string().min(10).optional(),
+      apiKey: Joi.string().allow('').optional(),
       model: Joi.string().optional()
     }).optional(),
     ollama: Joi.object({
-      baseURL: Joi.string().uri().optional(),
+      baseURL: Joi.string().uri().allow('').optional(),
       model: Joi.string().optional()
     }).optional()
   }).required()
@@ -97,7 +97,7 @@ export const validate = (schema: Joi.ObjectSchema) => {
     const { error, value } = schema.validate(req.body, {
       abortEarly: false,
       stripUnknown: true,
-      allowUnknown: false
+      allowUnknown: true
     });
 
     if (error) {

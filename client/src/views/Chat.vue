@@ -95,22 +95,32 @@
           <!-- AI消息 -->
           <div v-if="message.sender === 'ai'" class="chat chat-start">
             <div class="chat-image avatar">
-              <div class="w-10 rounded-full">
+              <div class="w-10 rounded-full relative">
                 <img
                   :src="currentCharacter?.avatar || 'https://ui-avatars.com/api/?name=AI&size=40&background=6366f1&color=fff'"
                   :alt="currentCharacter?.name || 'AI'"
                 />
+                <!-- 主动消息指示器 -->
+                <div v-if="message.is_proactive" class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center" title="主动消息">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5 text-primary-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
               </div>
             </div>
-            <div class="chat-header text-sm text-base-content/60 mb-1">
+            <div class="chat-header text-sm text-base-content/60 mb-1 flex items-center gap-2">
               {{ currentCharacter?.name || 'AI助手' }}
+              <!-- 主动消息标签 -->
+              <span v-if="message.is_proactive" class="badge badge-primary badge-xs">主动</span>
               <time class="text-xs opacity-50 ml-1">{{ formatMessageTime(message.timestamp) }}</time>
             </div>
-            <div class="chat-bubble bg-base-200 text-base-content shadow-sm">
+            <div class="chat-bubble shadow-sm" :class="message.is_proactive ? 'bg-primary/10 border border-primary/20' : 'bg-base-200 text-base-content'">
               {{ message.content }}
             </div>
             <div class="chat-footer opacity-50 text-xs mt-1 flex items-center gap-2">
               <span>已读</span>
+              <!-- 主动消息提示 -->
+              <span v-if="message.is_proactive" class="text-primary">AI主动发起</span>
               <!-- 语音播放按钮 -->
               <button
                 v-if="voiceEnabled && message.message_type === 'text'"
@@ -237,12 +247,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useChatStore, type ChatMessage } from '@/stores/chat';
 import { useCharactersStore } from '@/stores/characters';
 import { useGlobalStore } from '@/stores/global';
+import { useNotifications } from '@/composables/useNotifications';
 
 const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
 const charactersStore = useCharactersStore();
 const globalStore = useGlobalStore();
+const notifications = useNotifications();
 
 // 响应式数据
 const newMessage = ref('');
@@ -285,16 +297,28 @@ const shouldShowTimeStamp = (message: ChatMessage) => {
 };
 
 const formatTime = (timestamp: string) => {
-  return new Date(timestamp).toLocaleString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const date = new Date(timestamp);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+
+  if (isToday) {
+    return date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } else {
+    return date.toLocaleString('zh-CN', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
 };
 
 const formatMessageTime = (timestamp: string) => {
-  return new Date(timestamp).toLocaleTimeString('zh-CN', {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit'
   });
@@ -458,6 +482,8 @@ const initializeChat = async () => {
         if (existingSession) {
           // 如果找到现有会话，加载该会话的消息
           await chatStore.loadSessionMessages(existingSession.id);
+          // 注册WebSocket会话
+          notifications.registerSession(existingSession.id);
         } else {
           // 不立即创建新会话，等用户发送第一条消息时再创建
           chatStore.clearCurrentSession();
