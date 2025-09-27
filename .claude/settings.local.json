@@ -130,7 +130,8 @@
       "Bash(node test-frontend-update.js)",
       "Bash(npm run dev:frontend)",
       "Bash(taskkill /PID 21404 /F)",
-      "Bash(cmd /c \"taskkill /PID 21404 /F\")"
+      "Bash(cmd /c \"taskkill /PID 21404 /F\")",
+      "Bash(node check-ai-config.js)"
     ],
     "deny": [],
     "ask": []
