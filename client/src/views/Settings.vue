@@ -1204,32 +1204,74 @@ const settings = reactive({
   temperature: 0.7
 });
 
-const aiConfig = reactive({
-  currentProvider: 'groq',
-  temperature: 0.7,
-  providers: {
-    groq: {
-      apiKey: '',
-      model: 'llama-3.1-70b-versatile'
-    },
-    openai: {
-      apiKey: '',
-      model: 'gpt-4o-mini'
-    },
-    cohere: {
-      apiKey: '',
-      model: 'command-r-plus'
-    },
-    anthropic: {
-      apiKey: '',
-      model: 'claude-3-5-sonnet-20241022'
-    },
-    ollama: {
-      baseURL: 'http://localhost:11434',
-      model: 'llama3.1:8b'
+// 初始化AI配置函数
+const initAiConfig = () => {
+  // 首先尝试从localStorage加载
+  const savedConfig = localStorage.getItem('aiConfig');
+  if (savedConfig) {
+    try {
+      const parsed = JSON.parse(savedConfig);
+      return {
+        currentProvider: parsed.currentProvider || 'groq',
+        temperature: parsed.temperature || 0.7,
+        providers: {
+          groq: {
+            apiKey: parsed.providers?.groq?.apiKey || '',
+            model: parsed.providers?.groq?.model || 'llama-3.1-70b-versatile'
+          },
+          openai: {
+            apiKey: parsed.providers?.openai?.apiKey || '',
+            model: parsed.providers?.openai?.model || 'gpt-4o-mini'
+          },
+          cohere: {
+            apiKey: parsed.providers?.cohere?.apiKey || '',
+            model: parsed.providers?.cohere?.model || 'command-r-plus'
+          },
+          anthropic: {
+            apiKey: parsed.providers?.anthropic?.apiKey || '',
+            model: parsed.providers?.anthropic?.model || 'claude-3-5-sonnet-20241022'
+          },
+          ollama: {
+            baseURL: parsed.providers?.ollama?.baseURL || 'http://localhost:11434',
+            model: parsed.providers?.ollama?.model || 'llama3.1:8b'
+          }
+        }
+      };
+    } catch (error) {
+      console.error('Failed to parse saved AI config:', error);
     }
   }
-});
+
+  // 默认配置
+  return {
+    currentProvider: 'groq',
+    temperature: 0.7,
+    providers: {
+      groq: {
+        apiKey: '',
+        model: 'llama-3.1-70b-versatile'
+      },
+      openai: {
+        apiKey: '',
+        model: 'gpt-4o-mini'
+      },
+      cohere: {
+        apiKey: '',
+        model: 'command-r-plus'
+      },
+      anthropic: {
+        apiKey: '',
+        model: 'claude-3-5-sonnet-20241022'
+      },
+      ollama: {
+        baseURL: 'http://localhost:11434',
+        model: 'llama3.1:8b'
+      }
+    }
+  };
+};
+
+const aiConfig = reactive(initAiConfig());
 
 const speechConfig = reactive({
   tts: {
@@ -1751,17 +1793,28 @@ const testProviderConnection = async (provider: string, config: any): Promise<bo
 
 const saveAiConfiguration = async () => {
   try {
+    console.log('💾 Saving AI configuration:', {
+      currentProvider: aiConfig.currentProvider,
+      temperature: aiConfig.temperature
+    });
+
     // 保存到后端数据库
-    await api.post('/ai/config', {
+    const response = await api.post('/ai/config', {
       currentProvider: aiConfig.currentProvider,
       temperature: aiConfig.temperature,
       providers: aiConfig.providers
     });
 
+    console.log('✅ AI config saved to server:', response.data);
+
     // 同时保存到本地存储作为备份
     localStorage.setItem('aiConfig', JSON.stringify(aiConfig));
-  } catch (error) {
-    console.error('Failed to save AI configuration to backend:', error);
+
+    globalStore.showNotification('AI配置已保存', 'success');
+  } catch (error: any) {
+    console.error('❌ Failed to save AI configuration:', error);
+    globalStore.showNotification(`保存AI配置失败: ${error.response?.data?.error || error.message}`, 'error');
+
     // 即使后端保存失败，仍然保存到本地存储
     localStorage.setItem('aiConfig', JSON.stringify(aiConfig));
   }
@@ -1769,27 +1822,48 @@ const saveAiConfiguration = async () => {
 
 const loadAiConfiguration = async () => {
   try {
-    // 首先尝试从后端加载
+    console.log('🔄 Loading AI configuration from server...');
     const response = await api.get('/ai/config');
+    console.log('📥 Server response:', response.data);
+
     if (response.data) {
-      Object.assign(aiConfig, {
-        currentProvider: response.data.currentProvider,
-        temperature: response.data.temperature,
-        providers: response.data.providers
+      // 确保合并所有必要的字段
+      const serverConfig = {
+        currentProvider: response.data.currentProvider || aiConfig.currentProvider,
+        temperature: response.data.temperature || aiConfig.temperature,
+        providers: {
+          ...aiConfig.providers,
+          ...response.data.providers
+        }
+      };
+
+      Object.assign(aiConfig, serverConfig);
+
+      console.log('✅ AI config updated from server:', {
+        currentProvider: aiConfig.currentProvider,
+        temperature: aiConfig.temperature
       });
+
+      // 同时保存到本地存储作为备份
+      localStorage.setItem('aiConfig', JSON.stringify(aiConfig));
       return;
     }
   } catch (error) {
-    console.error('Failed to load AI configuration from backend:', error);
+    console.error('❌ Failed to load AI configuration from backend:', error);
   }
 
-  // 如果后端加载失败，尝试从本地存储加载
+  // 如果后端加载失败，确认本地存储配置
   const savedConfig = localStorage.getItem('aiConfig');
   if (savedConfig) {
     try {
-      Object.assign(aiConfig, JSON.parse(savedConfig));
+      const parsedConfig = JSON.parse(savedConfig);
+      Object.assign(aiConfig, parsedConfig);
+      console.log('📱 Loaded AI config from localStorage:', {
+        currentProvider: aiConfig.currentProvider,
+        temperature: aiConfig.temperature
+      });
     } catch (error) {
-      console.error('Failed to load AI configuration from localStorage:', error);
+      console.error('❌ Failed to load AI configuration from localStorage:', error);
     }
   }
 };

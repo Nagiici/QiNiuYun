@@ -896,7 +896,7 @@ aiRouter.post('/circuit-breaker/reset-all', (req, res) => {
 // =============== AI配置管理 ===============
 
 // 获取当前AI配置
-aiRouter.get('/config', longCacheMiddleware, async (req, res) => {
+aiRouter.get('/config', async (req, res) => {
   try {
     // 从数据库获取保存的配置，如果没有则使用默认配置
     const savedConfig = await DatabaseService.getAiConfiguration();
@@ -957,6 +957,9 @@ aiRouter.post('/config', configLimiter, validate(aiConfigSchema), async (req, re
       providers,
       updatedAt: new Date().toISOString()
     });
+
+    // 清除缓存确保立即生效
+    CacheManager.clearCache('/api/ai/config');
 
     // 更新内存中的配置
     updateAiConfig(providers);
