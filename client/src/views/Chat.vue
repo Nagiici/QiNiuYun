@@ -181,13 +181,10 @@
         <!-- 语音录制按钮 -->
         <button
           v-if="voiceEnabled"
-          @mousedown="startVoiceRecording"
-          @mouseup="stopVoiceRecording"
-          @touchstart="startVoiceRecording"
-          @touchend="stopVoiceRecording"
+          @click="toggleVoiceRecording"
           class="btn btn-circle"
           :class="isRecording ? 'btn-error' : 'btn-ghost'"
-          title="按住录音"
+          :title="isRecording ? '点击停止录音' : '点击开始录音'"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -233,8 +230,18 @@
           <div class="flex justify-center mb-4">
             <div v-for="i in 5" :key="i" class="voice-wave"></div>
           </div>
-          <p class="text-lg font-medium mb-2">正在录音...</p>
-          <p class="text-sm text-base-content/60">松开结束录音</p>
+          <p class="text-lg font-medium mb-4">正在录音...</p>
+          <button
+            @click="stopVoiceRecording"
+            class="btn btn-error btn-lg mb-4"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z" />
+            </svg>
+            停止录音
+          </button>
+          <p class="text-sm text-base-content/60">点击上方停止按钮或再次点击麦克风结束录音</p>
         </div>
       </div>
     </footer>
@@ -262,6 +269,9 @@ const voiceEnabled = ref(true);
 const isRecording = ref(false);
 const messagesContainer = ref<HTMLElement>();
 const messageInput = ref<HTMLTextAreaElement>();
+
+// 语音识别实例
+let speechRecognition: any = null;
 
 // 计算属性
 const currentCharacter = computed(() => globalStore.currentCharacter);
@@ -408,6 +418,15 @@ const speakMessage = (text: string) => {
   }
 };
 
+// 切换语音录音状态（点击模式）
+const toggleVoiceRecording = () => {
+  if (isRecording.value) {
+    stopVoiceRecording();
+  } else {
+    startVoiceRecording();
+  }
+};
+
 const startVoiceRecording = () => {
   if (!voiceEnabled.value) return;
 
@@ -416,28 +435,31 @@ const startVoiceRecording = () => {
   // 语音识别 (如果浏览器支持)
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    const recognition = new SpeechRecognition();
+    speechRecognition = new SpeechRecognition();
 
-    recognition.lang = 'zh-CN';
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    speechRecognition.lang = 'zh-CN';
+    speechRecognition.continuous = false;
+    speechRecognition.interimResults = false;
 
-    recognition.onresult = (event: any) => {
+    speechRecognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       newMessage.value = transcript;
       isRecording.value = false;
+      speechRecognition = null;
     };
 
-    recognition.onerror = () => {
+    speechRecognition.onerror = () => {
       isRecording.value = false;
+      speechRecognition = null;
       globalStore.showNotification('语音识别失败，请重试', 'error');
     };
 
-    recognition.onend = () => {
+    speechRecognition.onend = () => {
       isRecording.value = false;
+      speechRecognition = null;
     };
 
-    recognition.start();
+    speechRecognition.start();
   } else {
     // 模拟录音功能
     setTimeout(() => {
@@ -448,6 +470,10 @@ const startVoiceRecording = () => {
 };
 
 const stopVoiceRecording = () => {
+  if (speechRecognition) {
+    speechRecognition.stop();
+    speechRecognition = null;
+  }
   isRecording.value = false;
 };
 
