@@ -21,7 +21,7 @@ export const characterSchema = Joi.object({
   character_background: Joi.string().max(1000).allow('').optional(),
   has_mission: Joi.boolean().default(false),
   current_mission: Joi.string().max(500).allow('').optional(),
-  current_mood: Joi.string().valid('happy', 'sad', 'excited', 'calm', 'angry', 'mysterious', 'playful',).default('calm'),
+  current_mood: Joi.string().valid('happy', 'sad', 'excited', 'calm', 'angry', 'mysterious', 'playful').default('calm'),
   time_setting: Joi.string().valid('morning', 'noon', 'afternoon', 'evening', 'night', 'midnight').default('morning'),
   use_real_time: Joi.boolean().default(false),
   is_public: Joi.boolean().default(false),
