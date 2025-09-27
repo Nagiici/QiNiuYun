@@ -113,7 +113,9 @@
       "Bash(curl:*)",
       "Bash(sqlite3:*)",
       "Bash(node check-sessions.js)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(taskkill /PID 3928 /F)",
+      "Bash(cmd /c \"taskkill /PID 3928 /F\")"
     ],
     "deny": [],
     "ask": []

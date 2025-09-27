@@ -154,6 +154,10 @@ charactersRouter.put('/:id', validateParams(idParamSchema), validate(characterSc
     };
 
     const updatedCharacter = await DatabaseService.updateCharacter(id, characterData);
+
+    // 清理缓存
+    CacheManager.clearCharacterCache();
+
     res.json(updatedCharacter);
   } catch (error) {
     console.error('Error updating character:', error);
