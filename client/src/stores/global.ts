@@ -7,7 +7,15 @@ export const useGlobalStore = defineStore('global', () => {
   const loadingMessage = ref('');
 
   // 通知系统
-  const notification = ref<{ message: string; type: 'success' | 'error' | 'warning' | 'info' } | null>(null);
+  const notification = ref<{
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    duration?: number;
+    action?: {
+      label: string;
+      handler: () => void;
+    };
+  } | null>(null);
 
   // 当前选中的角色
   const currentCharacter = ref<any>(null);
@@ -22,8 +30,23 @@ export const useGlobalStore = defineStore('global', () => {
   };
 
   // 显示通知
-  const showNotification = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
-    notification.value = { message, type };
+  const showNotification = (
+    message: string,
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    options?: {
+      duration?: number;
+      action?: {
+        label: string;
+        handler: () => void;
+      };
+    }
+  ) => {
+    notification.value = {
+      message,
+      type,
+      duration: options?.duration,
+      action: options?.action
+    };
   };
 
   // 清除通知

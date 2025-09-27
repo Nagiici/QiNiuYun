@@ -70,6 +70,8 @@ export async function initDatabase() {
       character_name TEXT,
       last_message TEXT,
       last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
+      unread_count INTEGER DEFAULT 0, -- 未读消息计数
+      last_user_activity DATETIME DEFAULT CURRENT_TIMESTAMP, -- 用户最后活动时间
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (character_id) REFERENCES characters (id)
     )
@@ -85,6 +87,7 @@ export async function initDatabase() {
       content TEXT NOT NULL,
       voice_url TEXT, -- 语音文件URL（如果是语音消息）
       emotion TEXT, -- 消息情感分析结果
+      is_proactive BOOLEAN DEFAULT 0, -- 是否为AI主动发送的消息
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (session_id) REFERENCES chat_sessions (id)
     )
@@ -134,6 +137,17 @@ export async function initDatabase() {
       character_data TEXT, -- JSON格式存储完整角色数据
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(character_name, version)
+    )
+  `);
+
+  // 创建系统配置表
+  await dbRun(`
+    CREATE TABLE IF NOT EXISTS system_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      config_key TEXT NOT NULL UNIQUE,
+      config_value TEXT NOT NULL, -- JSON格式存储配置值
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
@@ -286,15 +300,23 @@ export class DatabaseService {
   // 更新角色
   static async updateCharacter(id: number, characterData: any) {
     return new Promise((resolve, reject) => {
-      db.run(`
+      // 确保数据库使用UTF-8编码
+      db.exec("PRAGMA encoding = 'UTF-8'", (err) => {
+        if (err) console.warn('Warning: Could not set UTF-8 encoding:', err);
+      });
+
+      // 使用prepared statement确保UTF-8编码处理
+      const stmt = db.prepare(`
         UPDATE characters SET
           name = ?, description = ?, avatar = ?, personality_preset = ?,
           custom_instructions = ?, story_background = ?, story_world = ?,
           character_background = ?, has_mission = ?, current_mission = ?,
           current_mood = ?, time_setting = ?, use_real_time = ?, is_public = ?,
-          personality_data = ?, examples = ?, updated_at = CURRENT_TIMESTAMP
+          personality_data = ?, examples = ?, updated_at = datetime('now')
         WHERE id = ?
-      `, [
+      `);
+
+      stmt.run([
         characterData.name,
         characterData.description,
         characterData.avatar,
@@ -313,9 +335,12 @@ export class DatabaseService {
         JSON.stringify(characterData.examples),
         id
       ], function(err) {
+        stmt.finalize();
         if (err) {
+          console.error('Update character error:', err);
           reject(err);
         } else {
+          console.log('Character updated successfully, changes:', this.changes);
           resolve({ changes: this.changes, id, ...characterData });
         }
       });
@@ -360,10 +385,11 @@ export class DatabaseService {
 
   // 创建聊天会话
   static async createChatSession(sessionId: string, characterId: number, characterName: string) {
+    const currentTimestamp = new Date().toISOString();
     await dbRun(`
-      INSERT OR REPLACE INTO chat_sessions (id, character_id, character_name, last_activity)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-    `, [sessionId, characterId, characterName]);
+      INSERT OR REPLACE INTO chat_sessions (id, character_id, character_name, last_activity, last_user_activity)
+      VALUES (?, ?, ?, ?, ?)
+    `, [sessionId, characterId, characterName, currentTimestamp, currentTimestamp]);
   }
 
   // 获取聊天消息
@@ -377,18 +403,40 @@ export class DatabaseService {
   }
 
   // 添加聊天消息
-  static async addChatMessage(sessionId: string, sender: string, content: string, messageType = 'text', emotion?: string) {
+  static async addChatMessage(sessionId: string, sender: string, content: string, messageType = 'text', emotion?: string, isProactive = false) {
+    const timestamp = new Date().toISOString();
     await dbRun(`
-      INSERT INTO chat_messages (session_id, sender, message_type, content, emotion)
-      VALUES (?, ?, ?, ?, ?)
-    `, [sessionId, sender, messageType, content, emotion]);
+      INSERT INTO chat_messages (session_id, sender, message_type, content, emotion, is_proactive, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [sessionId, sender, messageType, content, emotion, isProactive ? 1 : 0, timestamp]);
 
-    // 更新会话的最后活动时间和最后消息
-    await dbRun(`
-      UPDATE chat_sessions
-      SET last_message = ?, last_activity = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `, [content.substring(0, 50) + (content.length > 50 ? '...' : ''), sessionId]);
+    // 更新会话的最后活动时间和最后消息 - 使用统一的 ISO 时间戳格式
+    const lastActivityTimestamp = timestamp; // 使用相同的时间戳
+    const messagePreview = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+
+    if (sender === 'user') {
+      // 用户发送消息时，重置未读计数，更新用户活动时间
+      await dbRun(`
+        UPDATE chat_sessions
+        SET last_message = ?, last_activity = ?, last_user_activity = ?, unread_count = 0
+        WHERE id = ?
+      `, [messagePreview, lastActivityTimestamp, lastActivityTimestamp, sessionId]);
+    } else {
+      // AI发送消息时，增加未读计数（如果是主动消息）
+      if (isProactive) {
+        await dbRun(`
+          UPDATE chat_sessions
+          SET last_message = ?, last_activity = ?, unread_count = unread_count + 1
+          WHERE id = ?
+        `, [messagePreview, lastActivityTimestamp, sessionId]);
+      } else {
+        await dbRun(`
+          UPDATE chat_sessions
+          SET last_message = ?, last_activity = ?
+          WHERE id = ?
+        `, [messagePreview, lastActivityTimestamp, sessionId]);
+      }
+    }
   }
 
   // 删除聊天会话（包括所有相关消息）
@@ -629,5 +677,84 @@ export class DatabaseService {
         }
       );
     });
+  }
+
+  // AI主动聊天相关方法
+
+  // 获取需要主动聊天的会话（用户超过指定时间未活动的会话）
+  static async getSessionsForProactiveChat(inactiveMinutes: number = 30) {
+    const cutoffTime = new Date(Date.now() - inactiveMinutes * 60 * 1000).toISOString();
+
+    return await dbAll(`
+      SELECT cs.*, c.personality_preset, c.current_mood, c.personality_data, c.story_background, c.character_background
+      FROM chat_sessions cs
+      JOIN characters c ON cs.character_id = c.id
+      WHERE cs.last_user_activity < ?
+        AND cs.last_activity > ?
+      ORDER BY cs.last_user_activity ASC
+      LIMIT 5
+    `, [cutoffTime, new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()]); // 24小时内有活动的会话
+  }
+
+  // 标记会话已读
+  static async markSessionAsRead(sessionId: string) {
+    await dbRun(`
+      UPDATE chat_sessions
+      SET unread_count = 0, last_user_activity = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `, [sessionId]);
+  }
+
+  // 获取会话的最近对话上下文
+  static async getSessionContext(sessionId: string, limit: number = 5) {
+    return await dbAll(`
+      SELECT sender, content, timestamp, is_proactive
+      FROM chat_messages
+      WHERE session_id = ?
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `, [sessionId, limit]);
+  }
+
+  // =============== 系统配置管理 ===============
+
+  // 获取系统配置
+  static async getSystemConfig(configKey: string) {
+    try {
+      const result = await dbGet('SELECT config_value FROM system_config WHERE config_key = ?', [configKey]);
+      if (result) {
+        return JSON.parse(result.config_value);
+      }
+      return null;
+    } catch (error) {
+      console.error(`获取系统配置失败 (${configKey}):`, error);
+      return null;
+    }
+  }
+
+  // 保存系统配置
+  static async setSystemConfig(configKey: string, configValue: any) {
+    try {
+      const valueJson = JSON.stringify(configValue);
+      await dbRun(`
+        INSERT OR REPLACE INTO system_config (config_key, config_value, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+      `, [configKey, valueJson]);
+      return true;
+    } catch (error) {
+      console.error(`保存系统配置失败 (${configKey}):`, error);
+      return false;
+    }
+  }
+
+  // 删除系统配置
+  static async deleteSystemConfig(configKey: string) {
+    try {
+      await dbRun('DELETE FROM system_config WHERE config_key = ?', [configKey]);
+      return true;
+    } catch (error) {
+      console.error(`删除系统配置失败 (${configKey}):`, error);
+      return false;
+    }
   }
 }

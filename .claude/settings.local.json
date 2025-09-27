@@ -115,7 +115,22 @@
       "Bash(node check-sessions.js)",
       "Bash(del:*)",
       "Bash(taskkill /PID 3928 /F)",
-      "Bash(cmd /c \"taskkill /PID 3928 /F\")"
+      "Bash(cmd /c \"taskkill /PID 3928 /F\")",
+      "Bash(node migrate-proactive-chat.js)",
+      "Bash(taskkill /PID 15356 /F)",
+      "Bash(cmd /c \"taskkill /PID 15356 /F\")",
+      "Bash(node test-proactive-chat.js)",
+      "Bash(node server/test-proactive-chat.js)",
+      "Bash(node check-encoding.js)",
+      "Bash(node fix-encoding.js)",
+      "Bash(node rebuild-database.js)",
+      "Bash(node fix-encoding-v2.js)",
+      "Bash(node encoding-diagnosis.js)",
+      "Bash(node fix-character-encoding.js)",
+      "Bash(node test-frontend-update.js)",
+      "Bash(npm run dev:frontend)",
+      "Bash(taskkill /PID 21404 /F)",
+      "Bash(cmd /c \"taskkill /PID 21404 /F\")"
     ],
     "deny": [],
     "ask": []

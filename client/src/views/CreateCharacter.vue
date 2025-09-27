@@ -998,7 +998,14 @@ const handleSubmit = async () => {
 
     if (editMode.value && editCharacterId.value) {
       // 更新现有角色
+      console.log('Attempting to update character:', {
+        id: editCharacterId.value,
+        data: characterData
+      });
+
       resultCharacter = await charactersStore.updateCharacter(editCharacterId.value, characterData);
+
+      console.log('Update successful, result:', resultCharacter);
       globalStore.showNotification('角色更新成功！', 'success');
 
       // 跳转回首页
@@ -1022,12 +1029,17 @@ const handleSubmit = async () => {
         router.push(`/chat/${resultCharacter.id}`);
       }, 1500);
     }
-  } catch (error) {
-    console.error('Failed to submit character:', error);
-    globalStore.showNotification(
-      editMode.value ? '更新角色失败，请重试' : '创建角色失败，请重试',
-      'error'
-    );
+  } catch (error: any) {
+    console.error('Failed to submit character:', {
+      error: error.message,
+      stack: error.stack,
+      editMode: editMode.value,
+      characterId: editCharacterId.value
+    });
+
+    // 显示具体的错误信息
+    const errorMessage = error.message || (editMode.value ? '更新角色失败，请重试' : '创建角色失败，请重试');
+    globalStore.showNotification(errorMessage, 'error');
   } finally {
     loading.value = false;
     globalStore.setLoading(false);

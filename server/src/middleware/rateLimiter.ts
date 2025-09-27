@@ -1,9 +1,9 @@
 import rateLimit from 'express-rate-limit';
 
-// 通用限流器
+// 通用限流器（测试环境放宽限制）
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15分钟窗口
-  max: 100, // 每个IP每15分钟最多100个请求
+  max: 1000, // 每个IP每15分钟最多1000个请求（测试环境）
   message: {
     error: '请求过于频繁，请稍后再试',
     retryAfter: '15分钟'
@@ -12,10 +12,10 @@ export const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// AI聊天限流器（更严格）
+// AI聊天限流器（测试环境放宽限制）
 export const aiChatLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1分钟窗口
-  max: 20, // 每个IP每分钟最多20个AI请求
+  max: 200, // 每个IP每分钟最多200个AI请求（测试环境）
   message: {
     error: 'AI聊天请求过于频繁，请稍后再试',
     retryAfter: '1分钟'
@@ -24,10 +24,10 @@ export const aiChatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// 文件上传限流器
+// 文件上传限流器（测试环境放宽限制）
 export const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1小时窗口
-  max: 10, // 每个IP每小时最多10个上传请求
+  max: 100, // 每个IP每小时最多100个上传请求（测试环境）
   message: {
     error: '文件上传过于频繁，请稍后再试',
     retryAfter: '1小时'
@@ -36,10 +36,10 @@ export const uploadLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// 创建角色限流器
+// 创建角色限流器（测试环境放宽限制）
 export const createCharacterLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10分钟窗口
-  max: 5, // 每个IP每10分钟最多创建5个角色
+  max: 50, // 每个IP每10分钟最多创建50个角色（测试环境）
   message: {
     error: '创建角色过于频繁，请稍后再试',
     retryAfter: '10分钟'
@@ -48,10 +48,10 @@ export const createCharacterLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// 配置更新限流器
+// 配置更新限流器（测试环境放宽限制）
 export const configLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5分钟窗口
-  max: 10, // 每个IP每5分钟最多10个配置更新请求
+  max: 100, // 每个IP每5分钟最多100个配置更新请求（测试环境）
   message: {
     error: '配置更新过于频繁，请稍后再试',
     retryAfter: '5分钟'

@@ -106,13 +106,21 @@
             @click="loadSession(session)"
           >
             <div class="flex items-center gap-3">
-              <div class="avatar placeholder">
+              <div class="avatar placeholder relative">
                 <div class="w-8 h-8 rounded-full bg-accent text-accent-content text-xs">
                   {{ session.character_name.charAt(0) }}
                 </div>
+                <!-- 未读消息指示器 -->
+                <div v-if="session.unread_count && session.unread_count > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                  <span class="text-primary-content text-xs font-bold">{{ session.unread_count > 9 ? '9+' : session.unread_count }}</span>
+                </div>
               </div>
               <div class="flex-1 min-w-0">
-                <p class="font-medium text-sm truncate">{{ session.character_name }}</p>
+                <div class="flex items-center gap-2">
+                  <p class="font-medium text-sm truncate">{{ session.character_name }}</p>
+                  <!-- 主动消息指示器 -->
+                  <span v-if="hasProactiveMessage(session)" class="badge badge-primary badge-xs">AI主动</span>
+                </div>
                 <p class="text-xs opacity-70 truncate">{{ session.last_message }}</p>
                 <p class="text-xs opacity-50 mt-1">{{ formatRelativeTime(session.last_activity) }}</p>
               </div>
@@ -170,17 +178,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onActivated, watch } from 'vue';
+import { computed, onMounted, onActivated, onUnmounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useChatStore, type ChatSession } from '@/stores/chat';
 import { useCharactersStore } from '@/stores/characters';
 import { useGlobalStore } from '@/stores/global';
+import { useNotifications } from '@/composables/useNotifications';
 
 const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
 const charactersStore = useCharactersStore();
 const globalStore = useGlobalStore();
+const notifications = useNotifications();
 
 // 计算属性
 const currentSessionId = computed(() => {
@@ -211,10 +221,22 @@ const formatRelativeTime = (timestamp: string) => {
   }
 };
 
+// 判断会话是否包含主动消息
+const hasProactiveMessage = (session: ChatSession) => {
+  // 简单的判断逻辑：如果有未读消息，可能是主动消息
+  // 更精确的判断需要检查具体的消息内容，但这会增加API调用
+  return session.unread_count && session.unread_count > 0;
+};
+
 const loadSession = async (session: ChatSession) => {
   try {
     // 加载会话消息
     await chatStore.loadSessionMessages(session.id);
+
+    // 标记会话为已读
+    if (session.unread_count && session.unread_count > 0) {
+      await chatStore.markSessionAsRead(session.id);
+    }
 
     // 设置当前角色
     const character = await charactersStore.fetchCharacterById(session.character_id);
@@ -263,11 +285,43 @@ watch(
   }
 );
 
+// 监听WebSocket通知，实时更新会话列表
+const setupRealtimeUpdates = () => {
+  // 监听主动消息通知
+  notifications.notifications.value.forEach(notification => {
+    if (notification.type === 'proactive_message') {
+      // 当收到主动消息通知时，刷新会话列表
+      refreshSessions();
+    }
+  });
+};
+
 // 生命周期
-onMounted(refreshSessions);
+onMounted(() => {
+  refreshSessions();
+  setupRealtimeUpdates();
+});
 
 // 当组件激活时也刷新会话列表（用于keep-alive场景）
-onActivated(refreshSessions);
+onActivated(() => {
+  refreshSessions();
+  setupRealtimeUpdates();
+});
+
+// 监听通知变化，实时更新
+watch(
+  () => notifications.notifications.value,
+  (newNotifications) => {
+    const hasProactiveMessage = newNotifications.some(n => n.type === 'proactive_message');
+    if (hasProactiveMessage) {
+      // 延迟一点刷新，确保后端数据已更新
+      setTimeout(() => {
+        refreshSessions();
+      }, 1000);
+    }
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped>
