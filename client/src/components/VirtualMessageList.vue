@@ -312,12 +312,10 @@ onUnmounted(() => {
 }
 
 /* 暗色主题适配 */
-@media (prefers-color-scheme: dark) {
-  .message-ai {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f9fafb;
-  }
+[data-theme="dark"] .message-ai {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f9fafb;
 }
 
 /* 响应式设计 */

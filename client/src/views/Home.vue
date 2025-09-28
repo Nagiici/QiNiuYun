@@ -1,47 +1,54 @@
 <template>
-  <div class="min-h-screen bg-base-100">
+  <div class="flex h-screen bg-base-100">
     <!-- 侧边栏 -->
-    <div class="drawer" :class="{ 'lg:drawer-open': sidebarOpen }">
-      <input id="drawer-toggle" type="checkbox" class="drawer-toggle" v-model="sidebarOpen" />
+    <aside
+      class="flex flex-col h-full bg-base-100 text-base-content border-r border-base-300 transition-all duration-300 relative hidden lg:block"
+      :class="sidebarOpen ? 'w-72' : 'w-20'"
+    >
+      <div class="flex items-center justify-between h-16 px-4 flex-shrink-0">
+        <router-link to="/" class="btn btn-ghost text-xl" v-show="sidebarOpen">
+          🤖 AI人物聊天
+        </router-link>
+        <!-- 桌面端侧边栏切换按钮 -->
+        <button
+          @click="toggleSidebar"
+          class="btn btn-square btn-ghost hidden lg:flex hover:bg-base-200 transition-colors z-10"
+          :title="sidebarOpen ? '收起边栏' : '展开边栏'"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 transition-transform duration-300" :class="{ 'rotate-180': sidebarOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
+      <ChatSidebar :is-collapsed="!sidebarOpen" class="flex-1 min-h-0" />
+    </aside>
 
-      <!-- 主内容区域 -->
-      <div class="drawer-content flex flex-col">
-        <!-- 导航栏 -->
-        <div class="navbar bg-base-100 border-b border-base-300">
-          <div class="flex-none">
-            <!-- 移动端菜单按钮 -->
-            <label for="drawer-toggle" class="btn btn-square btn-ghost lg:hidden">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-              </svg>
-            </label>
-
-            <!-- 桌面端侧边栏切换按钮 -->
-            <button
-              @click="toggleSidebar"
-              class="btn btn-square btn-ghost hidden lg:flex hover:bg-base-200 transition-colors"
-              :title="sidebarOpen ? '隐藏侧边栏' : '显示侧边栏'"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 transition-transform duration-200" :class="{ 'rotate-180': !sidebarOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            </button>
-          </div>
-          <div class="flex-1">
-            <h1 class="text-lg font-bold">{{ sidebarOpen ? '隐藏侧边栏' : '显示侧边栏' }}</h1>
-          </div>
+    <!-- 主内容区域 -->
+    <div class="flex-1 flex flex-col transition-all duration-300 min-w-0">
+      <!-- 导航栏 -->
+      <div class="navbar bg-base-100 border-b border-base-300 lg:hidden">
+        <div class="flex-none">
+          <!-- 移动端菜单按钮 -->
+          <label for="drawer-toggle" class="btn btn-square btn-ghost">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+          </label>
         </div>
+        <div class="flex-1">
+          <h1 class="text-lg font-bold">AI人物聊天</h1>
+        </div>
+      </div>
 
-
-        <!-- 主页内容 -->
-        <div class="flex-1 p-4 transition-all duration-300" :class="{ 'lg:ml-80': sidebarOpen }">
-          <!-- Hero区域 -->
-          <section class="hero min-h-96 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 rounded-2xl mb-8">
-            <div class="hero-content text-center max-w-4xl">
-              <div class="bg-base-100/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
-                <h1 class="text-5xl font-bold text-base-content mb-4 fade-in">
-                  开启你的AI伴侣世界
-                </h1>
+      <!-- 主页内容 -->
+      <div class="flex-1 p-4 overflow-y-auto">
+        <!-- Hero区域 -->
+        <section class="hero min-h-96 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 rounded-2xl mb-8">
+          <div class="hero-content text-center max-w-4xl">
+            <div class="bg-base-100/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+              <h1 class="text-5xl font-bold text-base-content mb-4 fade-in">
+                开启你的AI伴侣世界
+              </h1>
                 <p class="text-xl text-base-content/80 mb-6 slide-up">
                   定制专属AI角色，畅享智能对话
                 </p>
@@ -128,48 +135,46 @@
                 :key="character.id"
                 class="carousel-item"
               >
-                <div class="card w-64 bg-base-100 shadow-lg hover:shadow-xl card-hover cursor-pointer transition-all duration-300"
+                <div class="card bg-base-100 shadow-lg hover:shadow-xl card-hover group cursor-pointer transition-all duration-300 overflow-hidden w-80"
                      @click="selectCharacter(character)">
-                  <figure class="px-4 pt-4">
-                    <img
-                      :src="character.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(character.name)}&size=200&background=6366f1&color=fff`"
-                      :alt="character.name"
-                      class="rounded-xl w-full h-32 object-cover character-avatar"
-                    />
-                  </figure>
-                  <div class="card-body p-4">
-                    <h3 class="card-title text-lg">{{ character.name }}</h3>
-                    <p class="text-sm text-base-content/70 line-clamp-2">
-                      {{ character.description }}
-                    </p>
-                    <div class="card-actions justify-between items-center mt-4">
-                      <div class="badge badge-secondary badge-sm">{{ getCharacterType(character) }}</div>
-                      <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div class="flex p-4 h-full">
+                    <div class="flex-shrink-0 mr-4">
+                      <img
+                        :src="character.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(character.name)}&size=128&background=6366f1&color=fff`"
+                        :alt="character.name"
+                        class="rounded-full w-24 h-24 object-cover character-avatar"
+                      />
+                    </div>
+                    <div class="flex flex-col justify-between flex-grow h-full">
+                      <div>
+                        <div class="badge badge-secondary badge-sm mb-2">{{ getCharacterType(character) }}</div>
+                        <h3 class="text-xl font-bold mb-1">{{ character.name }}</h3>
+                        <p class="text-sm text-base-content/70 line-clamp-2 min-h-[2.5rem]">
+                          {{ character.description }}
+                        </p>
+                      </div>
+                      <div class="flex justify-end gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <button
-                          class="btn btn-primary btn-sm"
+                          class="btn btn-primary btn-xs"
                           @click.stop="quickChat(character)"
                         >
                           快速对话
                         </button>
                         <button
                           v-if="!isPresetCharacter(character)"
-                          class="btn btn-ghost btn-sm"
+                          class="btn btn-ghost btn-xs"
                           @click.stop="editCharacter(character)"
                           title="编辑角色"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
+                          编辑
                         </button>
                         <button
                           v-if="!isPresetCharacter(character)"
-                          class="btn btn-error btn-sm"
+                          class="btn btn-error btn-xs"
                           @click.stop="deleteCharacter(character)"
                           title="删除角色"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          删除
                         </button>
                       </div>
                     </div>
@@ -226,51 +231,46 @@
                 :key="character.id"
                 class="character-card"
               >
-                <div class="card bg-base-100 shadow-lg hover:shadow-xl card-hover group cursor-pointer transition-all duration-300"
+                <div class="card bg-base-100 shadow-lg hover:shadow-xl card-hover group cursor-pointer transition-all duration-300 overflow-hidden h-full"
                      @click="selectCharacter(character)">
-                  <figure class="px-4 pt-4">
-                    <img
-                      :src="character.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(character.name)}&size=280&background=6366f1&color=fff`"
-                      :alt="character.name"
-                      class="rounded-xl w-full h-48 object-cover character-avatar"
-                    />
-                  </figure>
-                  <div class="card-body p-4">
-                    <h3 class="card-title text-lg mb-2">{{ character.name }}</h3>
-                    <p class="text-sm text-base-content/70 mb-4 line-clamp-3">
-                      {{ character.description }}
-                    </p>
-                    <div class="card-actions justify-between items-center">
-                      <div class="badge badge-secondary badge-sm">{{ getCharacterType(character) }}</div>
-                      <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div class="flex p-4 h-full">
+                    <div class="flex-shrink-0 mr-4">
+                      <img
+                        :src="character.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(character.name)}&size=128&background=6366f1&color=fff`"
+                        :alt="character.name"
+                        class="rounded-full w-24 h-24 object-cover character-avatar"
+                      />
+                    </div>
+                    <div class="flex flex-col justify-between flex-grow h-full">
+                      <div>
+                        <div class="badge badge-secondary badge-sm mb-2">{{ getCharacterType(character) }}</div>
+                        <h3 class="text-xl font-bold mb-1">{{ character.name }}</h3>
+                        <p class="text-sm text-base-content/70 line-clamp-2 min-h-[2.5rem]">
+                          {{ character.description }}
+                        </p>
+                      </div>
+                      <div class="flex justify-end gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <button
-                          class="btn btn-primary btn-sm"
+                          class="btn btn-primary btn-xs"
                           @click.stop="quickChat(character)"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
-                          </svg>
                           快速对话
                         </button>
                         <button
                           v-if="!isPresetCharacter(character)"
-                          class="btn btn-ghost btn-sm"
+                          class="btn btn-ghost btn-xs"
                           @click.stop="editCharacter(character)"
                           title="编辑角色"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
+                          编辑
                         </button>
                         <button
                           v-if="!isPresetCharacter(character)"
-                          class="btn btn-error btn-sm"
+                          class="btn btn-error btn-xs"
                           @click.stop="deleteCharacter(character)"
                           title="删除角色"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          删除
                         </button>
                       </div>
                     </div>
@@ -338,15 +338,6 @@
               </div>
             </div>
           </section>
-        </div>
-      </div>
-
-      <!-- 侧边栏 -->
-      <div class="drawer-side">
-        <label for="drawer-toggle" aria-label="close sidebar" class="drawer-overlay"></label>
-        <aside class="w-80 min-h-full bg-base-100 text-base-content border-r border-base-300">
-          <ChatSidebar />
-        </aside>
       </div>
     </div>
   </div>
@@ -535,6 +526,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.character-card {
+  display: flex;
+  flex-direction: column;
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
