@@ -1,4 +1,4 @@
-# ⚠️ 开发前请务必详读Develop Standard.md！！！
+# ⚠️ 开发前请务必详读DEPLOYMENT.md！！！
 
 # 🎭 AI Character Roleplay Website
 
@@ -6,7 +6,7 @@
 
 ## 📋 项目概述
 
-**QiNiuYun AI角色扮演平台**是一个全栈Web应用，提供：
+**AI角色扮演平台**是一个全栈Web应用，提供：
 - 🤖 **智能角色创建** - 6维个性系统，支持自定义角色背景
 - 💬 **实时聊天** - WebSocket支持，类似微信的聊天界面
 - 🎙️ **语音交互** - 语音识别和文本转语音功能
@@ -75,11 +75,15 @@ cd QiNiuYun
 npm run install:all
 
 # 启动开发服务器
+# 新建两个终端，分别输入：
+cd client
+npm run dev
+cd server
 npm run dev
 ```
 
 ### **访问地址**
-- **前端**: http://localhost:3001
+- **前端**: http://localhost:3000
 - **后端API**: http://localhost:8080
 - **聊天WebSocket**: ws://localhost:8080
 
@@ -165,6 +169,10 @@ TTS_SERVICE_URL=https://api.elevenlabs.io
 ### **手动测试**
 ```bash
 # 启动开发服务器
+# 新建两个终端，分别输入：
+cd client
+npm run dev
+cd server
 npm run dev
 
 # 在浏览器中测试
@@ -274,37 +282,3 @@ const voiceFeatures = {
 - [ ] 自定义AI提供商的插件系统
 - [ ] 高级分析和洞察
 
-## 🤝 **贡献指南**
-
-1. Fork 本仓库
-2. 创建功能分支: `git checkout -b feature/amazing-feature`
-3. 提交更改: `git commit -m '添加新功能'`
-4. 推送到分支: `git push origin feature/amazing-feature`
-5. 提交 Pull Request
-
-## 📄 **许可证**
-
-本项目采用 MIT 许可证 - 详情请参阅 LICENSE 文件。
-
-## 🎉 **致谢**
-
-- **Vue.js 团队** - 优秀的框架
-- **TailwindCSS** - 美观的实用类
-- **DaisyUI** - 精美的UI组件
-- **AI提供商** - Groq、OpenAI、Cohere、Anthropic
-- **Web APIs** - 语音识别与合成
-
----
-
-## 📞 **支持与问题**
-
-- 📖 **文档**: 查看 `DEPLOYMENT.md` 获取生产环境设置
-- 🐛 **错误报告**: 提交包含详细重现步骤的issue
-- 💡 **功能请求**: 描述您的用例和期望行为
-- 🤔 **问题**: 查看现有issue或开始讨论
-
-**使用现代Web技术构建 ❤️**
-
----
-
-**⭐ 如果您觉得这个项目有用，请给它一个星标！ ⭐**

@@ -1,5 +1,3 @@
-# ⚠️ 开发前请务必详读Develop Standard.md！！！
-
 # 🚀 AI Character Roleplay Website - Deployment Guide
 
 ## 📋 Production Checklist
@@ -42,7 +40,7 @@ npm run dev
 
 Access:
 
-- **Frontend**: http://localhost:3001
+- **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8080
 - **WebSocket**: ws://localhost:8080
 
