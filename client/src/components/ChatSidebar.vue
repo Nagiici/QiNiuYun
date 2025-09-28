@@ -1,33 +1,19 @@
 <template>
-  <div class="h-full flex flex-col">
-    <!-- 侧边栏头部 -->
-    <div class="p-4 border-b border-base-300">
-      <div class="flex items-center gap-3">
-        <div class="avatar placeholder">
-          <div class="w-10 h-10 rounded-full bg-primary text-primary-content">
-            <span class="text-lg">🤖</span>
-          </div>
-        </div>
-        <div>
-          <h2 class="font-bold text-base">AI聊天</h2>
-          <p class="text-xs text-base-content/60">智能人物对话平台</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 快速导航 -->
-    <div class="p-4">
-      <ul class="menu gap-2">
+  <div class="flex flex-col overflow-hidden">
+    <!-- 快速导航 - 固定在顶部 -->
+    <div class="flex-shrink-0 p-2" :class="{ 'p-1': isCollapsed }">
+      <ul class="menu gap-1" :class="{ 'items-center flex flex-col': isCollapsed }">
         <li>
           <router-link
             to="/"
             class="nav-hover focus-primary"
-            :class="{ 'active': $route.name === 'Home' }"
+            :class="[{ 'active': $route.name === 'Home' }, { 'w-10 h-10 justify-center': isCollapsed }]"
+            :title="isCollapsed ? '主页' : ''"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
             </svg>
-            <span class="font-medium">主页</span>
+            <span v-show="!isCollapsed" class="font-medium">主页</span>
           </router-link>
         </li>
 
@@ -35,143 +21,125 @@
           <router-link
             to="/create"
             class="nav-hover focus-primary"
-            :class="{ 'active': $route.name === 'CreateCharacter' }"
+            :class="[{ 'active': $route.name === 'CreateCharacter' }, { 'w-10 h-10 justify-center': isCollapsed }]"
+            :title="isCollapsed ? '创建人物' : ''"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            <span class="font-medium">创建人物</span>
-          </router-link>
-        </li>
-
-        <li v-if="globalStore.currentCharacter">
-          <router-link
-            :to="`/chat/${globalStore.currentCharacter.id}`"
-            class="nav-hover focus-primary"
-            :class="{ 'active': $route.name === 'Chat' }"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
-            </svg>
-            <span class="font-medium">当前聊天</span>
+            <span v-show="!isCollapsed" class="font-medium">创建人物</span>
           </router-link>
         </li>
       </ul>
     </div>
 
-    <!-- 当前角色信息 -->
-    <div v-if="globalStore.currentCharacter" class="px-4 mb-4">
-      <div class="card bg-base-200 shadow-sm">
-        <div class="card-body p-3">
-          <div class="flex items-center gap-3">
-            <div class="avatar">
-              <div class="w-10 h-10 rounded-full">
-                <img
-                  :src="globalStore.currentCharacter.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(globalStore.currentCharacter.name)}&size=40&background=6366f1&color=fff`"
-                  :alt="globalStore.currentCharacter.name"
-                />
-              </div>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="font-semibold text-sm truncate">{{ globalStore.currentCharacter.name }}</p>
-              <p class="text-xs text-base-content/60 truncate">当前对话角色</p>
-            </div>
-          </div>
-        </div>
+    <!-- 历史会话标题 - 固定 -->
+    <div class="flex-shrink-0 px-4" :class="{ 'px-2': isCollapsed }">
+      <div v-show="!isCollapsed" class="divider text-xs text-base-content/50 my-1">
+        <span>历史会话</span>
       </div>
     </div>
 
-    <!-- 历史会话 -->
-    <div class="flex-1 overflow-y-auto">
-      <div class="px-4">
-        <div class="divider text-xs text-base-content/50">
-          <span>历史会话</span>
+    <!-- 历史会话列表 - 可滚动区域 -->
+    <div class="flex-1 overflow-y-auto px-4" :class="{ 'px-2': isCollapsed }">
+      <!-- 加载状态 -->
+      <div v-if="chatStore.loading" class="text-center py-4">
+        <span class="loading loading-spinner loading-md"></span>
+        <p v-show="!isCollapsed" class="text-sm text-base-content/60 mt-2">加载中...</p>
+      </div>
+
+      <!-- 会话列表 -->
+      <div v-else-if="chatStore.sessions.length > 0" class="space-y-2 pb-2">
+        <div
+          v-for="session in chatStore.sessions"
+          :key="session.id"
+          class="chat-history-item nav-hover p-2 rounded-lg cursor-pointer border border-transparent transition-colors duration-200"
+          :class="[{ 'active': currentSessionId === session.id }, { 'p-1': isCollapsed }]"
+          @click="loadSession(session)"
+          :title="isCollapsed ? session.character_name : ''"
+        >
+          <div class="flex items-center gap-3" :class="{ 'justify-center h-10': isCollapsed }">
+            <div class="avatar placeholder relative">
+              <div class="w-8 h-8 rounded-full bg-accent text-accent-content text-xs">
+                {{ session.character_name.charAt(0) }}
+              </div>
+              <!-- 未读消息指示器 -->
+              <div v-if="session.unread_count && session.unread_count > 0" class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                <span class="text-primary-content text-xs font-bold">{{ session.unread_count > 9 ? '9+' : session.unread_count }}</span>
+              </div>
+            </div>
+            <div v-show="!isCollapsed" class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="font-medium text-sm truncate">{{ session.character_name }}</p>
+                <!-- 主动消息指示器 -->
+                <span v-if="hasProactiveMessage(session)" class="badge badge-primary badge-xs">AI主动</span>
+              </div>
+              <p class="text-xs opacity-70 truncate">{{ session.last_message }}</p>
+              <p class="text-xs opacity-50 mt-0.5">{{ formatRelativeTime(session.last_activity) }}</p>
+            </div>
+          </div>
+
+          <!-- 会话操作 -->
+          <div v-show="!isCollapsed" class="flex gap-1 mt-1">
+            <button
+              class="btn btn-ghost btn-xs"
+              @click.stop="resumeSession(session)"
+              title="恢复对话"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
+              </svg>
+            </button>
+            <button
+              class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
+              @click.stop="deleteSession(session)"
+              title="删除会话"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div class="px-4 pb-4">
-        <!-- 加载状态 -->
-        <div v-if="chatStore.loading" class="text-center py-8">
-          <span class="loading loading-spinner loading-md"></span>
-          <p class="text-sm text-base-content/60 mt-2">加载中...</p>
-        </div>
+      <!-- 空状态 -->
+      <div v-else class="text-center py-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto text-base-content/30 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
+        </svg>
+        <p v-show="!isCollapsed" class="text-sm text-base-content/60">暂无历史会话</p>
+        <p v-show="!isCollapsed" class="text-xs text-base-content/40 mt-1">选择角色开始对话</p>
+      </div>
+    </div>
 
-        <!-- 会话列表 -->
-        <div v-else-if="chatStore.sessions.length > 0" class="space-y-2">
-          <div
-            v-for="session in chatStore.sessions"
-            :key="session.id"
-            class="chat-history-item p-3 rounded-lg cursor-pointer border border-transparent hover:border-primary hover:bg-base-200 transition-all duration-200"
-            :class="{ 'bg-primary text-primary-content': currentSessionId === session.id }"
-            @click="loadSession(session)"
-          >
-            <div class="flex items-center gap-3">
-              <div class="avatar placeholder relative">
-                <div class="w-8 h-8 rounded-full bg-accent text-accent-content text-xs">
-                  {{ session.character_name.charAt(0) }}
-                </div>
-                <!-- 未读消息指示器 -->
-                <div v-if="session.unread_count && session.unread_count > 0" class="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                  <span class="text-primary-content text-xs font-bold">{{ session.unread_count > 9 ? '9+' : session.unread_count }}</span>
-                </div>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <p class="font-medium text-sm truncate">{{ session.character_name }}</p>
-                  <!-- 主动消息指示器 -->
-                  <span v-if="hasProactiveMessage(session)" class="badge badge-primary badge-xs">AI主动</span>
-                </div>
-                <p class="text-xs opacity-70 truncate">{{ session.last_message }}</p>
-                <p class="text-xs opacity-50 mt-1">{{ formatRelativeTime(session.last_activity) }}</p>
-              </div>
-            </div>
-
-            <!-- 会话操作 -->
-            <div class="flex gap-1 mt-2">
-              <button
-                class="btn btn-ghost btn-xs"
-                @click.stop="resumeSession(session)"
-                title="恢复对话"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
-                </svg>
-              </button>
-              <button
-                class="btn btn-ghost btn-xs text-error hover:bg-error hover:text-error-content"
-                @click.stop="deleteSession(session)"
-                title="删除会话"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 空状态 -->
-        <div v-else class="text-center py-8">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mx-auto text-base-content/30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-4.126-.964L3 20l1.036-5.874A8.955 8.955 0 013 12a8 8 0 018-8 8 8 0 018 8z" />
+    <!-- 侧边栏底部 - 固定在底部 -->
+    <div class="mt-auto flex-shrink-0 border-t border-base-300 p-1" :class="{ 'p-0.5': isCollapsed }">
+      <!-- 主题切换 -->
+      <div class="dropdown dropdown-top w-full mb-0.5">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-xs w-full nav-hover focus-primary h-8" :class="{ 'justify-start': !isCollapsed, 'justify-center w-10': isCollapsed }">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
-          <p class="text-sm text-base-content/60">暂无历史会话</p>
-          <p class="text-xs text-base-content/40 mt-1">选择角色开始对话</p>
+          <span v-show="!isCollapsed" class="text-xs">主题</span>
         </div>
+        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-2xl bg-base-300 rounded-box w-52">
+          <li><a @click="setTheme('light')">🌞 浅色主题</a></li>
+          <li><a @click="setTheme('dark')">🌙 深色主题</a></li>
+        </ul>
       </div>
-    </div>
 
-    <!-- 侧边栏底部 -->
-    <div class="p-4 border-t border-base-300">
       <router-link
         to="/settings"
-        class="btn btn-ghost w-full justify-start nav-hover focus-primary"
+        class="btn btn-ghost btn-xs w-full nav-hover focus-primary h-8"
+        :class="{ 'justify-start': !isCollapsed, 'justify-center w-10': isCollapsed }"
+        :title="isCollapsed ? '设置' : ''"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-        <span class="text-sm">设置</span>
+        <span v-show="!isCollapsed" class="text-xs">设置</span>
       </router-link>
     </div>
   </div>
@@ -184,6 +152,14 @@ import { useChatStore, type ChatSession } from '@/stores/chat';
 import { useCharactersStore } from '@/stores/characters';
 import { useGlobalStore } from '@/stores/global';
 import { useNotifications } from '@/composables/useNotifications';
+
+// Props
+const props = defineProps({
+  isCollapsed: {
+    type: Boolean,
+    default: false,
+  },
+});
 
 const route = useRoute();
 const router = useRouter();
@@ -198,6 +174,11 @@ const currentSessionId = computed(() => {
 });
 
 // 方法
+const setTheme = (theme: string) => {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
+};
+
 const formatRelativeTime = (timestamp: string) => {
   const now = new Date().getTime();
   const time = new Date(timestamp).getTime();
@@ -331,8 +312,9 @@ watch(
 }
 
 .nav-hover.active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 1) 0%, rgba(236, 72, 153, 1) 100%);
-  color: white;
+  background-color: hsl(var(--b2));
+  color: hsl(var(--bc));
+  font-weight: 600;
 }
 
 .chat-history-item:hover {

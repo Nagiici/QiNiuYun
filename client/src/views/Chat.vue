@@ -1,250 +1,294 @@
 <template>
-  <div class="min-h-screen bg-base-100 flex flex-col">
-    <!-- 聊天界面头部 -->
-    <header class="bg-base-100 border-b border-base-300 p-4">
-      <div class="flex items-center justify-between max-w-4xl mx-auto">
-        <!-- 左侧：返回按钮和角色信息 -->
-        <div class="flex items-center gap-4">
-          <button @click="$router.push('/')" class="btn btn-ghost btn-circle">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </button>
+  <div class="flex h-screen bg-base-100">
+    <!-- 侧边栏 -->
+    <aside
+      class="bg-base-100 text-base-content border-r border-base-300 transition-all duration-300 relative hidden lg:block"
+      :class="sidebarOpen ? 'w-72' : 'w-20'"
+    >
+      <div class="flex items-center justify-between h-16 px-4">
+        <router-link to="/" class="btn btn-ghost text-xl" v-show="sidebarOpen">
+          🤖 AI人物聊天
+        </router-link>
+        <!-- 桌面端侧边栏切换按钮 -->
+        <button
+          @click="toggleSidebar"
+          class="btn btn-square btn-ghost hidden lg:flex hover:bg-base-200 transition-colors z-10"
+          :title="sidebarOpen ? '收起边栏' : '展开边栏'"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 transition-transform duration-300" :class="{ 'rotate-180': sidebarOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
+      <ChatSidebar :is-collapsed="!sidebarOpen" />
+    </aside>
 
-          <div v-if="currentCharacter" class="flex items-center gap-3">
-            <div class="avatar">
-              <div class="w-12 h-12 rounded-full">
-                <img
-                  :src="currentCharacter.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentCharacter.name)}&size=48&background=6366f1&color=fff`"
-                  :alt="currentCharacter.name"
-                />
+    <!-- 主内容区域 -->
+    <div class="flex-1 flex flex-col transition-all duration-300 min-w-0">
+      <!-- 聊天界面头部 -->
+      <header class="bg-base-100 border-b border-base-300 p-4">
+        <div class="flex items-center justify-between max-w-4xl mx-auto">
+          <!-- 左侧：返回按钮和角色信息 -->
+          <div class="flex items-center gap-4">
+            <button @click="$router.push('/')" class="btn btn-ghost btn-circle">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+
+            <div v-if="currentCharacter" class="flex items-center gap-3">
+              <div class="avatar">
+                <div class="w-12 h-12 rounded-full">
+                  <img
+                    :src="currentCharacter.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentCharacter.name)}&size=48&background=6366f1&color=fff`"
+                    :alt="currentCharacter.name"
+                  />
+                </div>
+              </div>
+              <div>
+                <h1 class="font-bold text-lg">{{ currentCharacter.name }}</h1>
               </div>
             </div>
-            <div>
-              <h1 class="font-bold text-lg">{{ currentCharacter.name }}</h1>
-              <p class="text-sm text-base-content/60">{{ currentCharacter.description }}</p>
+            <div v-else>
+              <h1 class="font-bold text-lg">AI 聊天</h1>
             </div>
           </div>
-          <div v-else>
-            <h1 class="font-bold text-lg">AI 聊天</h1>
-          </div>
-        </div>
 
-        <!-- 右侧：操作按钮 -->
-        <div class="flex items-center gap-2">
-          <!-- 语音开关 -->
-          <button
-            @click="voiceEnabled = !voiceEnabled"
-            class="btn btn-ghost btn-circle"
-            :class="{ 'text-primary': voiceEnabled }"
-            title="切换语音功能"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-          </button>
-
-          <!-- 清空聊天 -->
-          <button @click="clearChat" class="btn btn-ghost btn-circle" title="清空聊天记录">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- 聊天消息区域 -->
-    <main class="flex-1 overflow-y-auto p-4" ref="messagesContainer">
-      <div class="max-w-4xl mx-auto space-y-6">
-        <!-- 欢迎消息 -->
-        <div v-if="messages.length === 0" class="text-center py-12">
-          <div class="avatar mb-6">
-            <div class="w-20 h-20 rounded-full">
-              <img
-                :src="currentCharacter?.avatar || 'https://ui-avatars.com/api/?name=AI&size=80&background=6366f1&color=fff'"
-                :alt="currentCharacter?.name || 'AI'"
-              />
-            </div>
-          </div>
-          <h2 class="text-2xl font-bold mb-2">
-            你好！我是{{ currentCharacter?.name || 'AI助手' }}
-          </h2>
-          <p class="text-base-content/70 mb-6">
-            {{ currentCharacter?.description || '很高兴与你对话！有什么我可以帮助你的吗？' }}
-          </p>
-          <div class="flex flex-wrap gap-2 justify-center">
+          <!-- 右侧：操作按钮 -->
+          <div class="flex items-center gap-2">
+            <!-- 语音开关 -->
             <button
-              v-for="suggestion in suggestions"
-              :key="suggestion"
-              @click="sendMessage(suggestion)"
-              class="btn btn-outline btn-sm"
+              @click="voiceEnabled = !voiceEnabled"
+              class="btn btn-ghost btn-circle"
+              :class="{ 'text-primary': voiceEnabled }"
+              title="切换语音功能"
             >
-              {{ suggestion }}
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </button>
+
+            <!-- 清空聊天 -->
+            <button @click="clearChat" class="btn btn-ghost btn-circle" title="清空聊天记录">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+
+            <!-- 信息侧边栏切换按钮 -->
+            <button
+              @click="infoSidebarOpen = !infoSidebarOpen"
+              class="btn btn-ghost btn-circle hidden xl:flex"
+              title="切换信息面板"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </button>
           </div>
         </div>
+      </header>
 
-        <!-- 消息列表 -->
-        <div v-for="message in messages" :key="message.timestamp" class="message-bubble">
-          <!-- 时间分隔线 -->
-          <div v-if="shouldShowTimeStamp(message)" class="divider text-xs text-base-content/40">
-            {{ formatTime(message.timestamp) }}
-          </div>
-
-          <!-- AI消息 -->
-          <div v-if="message.sender === 'ai'" class="chat chat-start">
-            <div class="chat-image avatar">
-              <div class="w-10 rounded-full relative">
+      <!-- 聊天消息区域 -->
+      <main class="flex-1 overflow-y-auto p-4" ref="messagesContainer">
+        <div class="max-w-4xl mx-auto space-y-6">
+          <!-- 欢迎消息 -->
+          <div v-if="messages.length === 0" class="text-center py-12">
+            <div class="avatar mb-6">
+              <div class="w-20 h-20 rounded-full">
                 <img
-                  :src="currentCharacter?.avatar || 'https://ui-avatars.com/api/?name=AI&size=40&background=6366f1&color=fff'"
+                  :src="currentCharacter?.avatar || 'https://ui-avatars.com/api/?name=AI&size=80&background=6366f1&color=fff'"
                   :alt="currentCharacter?.name || 'AI'"
                 />
-                <!-- 主动消息指示器 -->
-                <div v-if="message.is_proactive" class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center" title="主动消息">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5 text-primary-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
               </div>
             </div>
-            <div class="chat-header text-sm text-base-content/60 mb-1 flex items-center gap-2">
-              {{ currentCharacter?.name || 'AI助手' }}
-              <!-- 主动消息标签 -->
-              <span v-if="message.is_proactive" class="badge badge-primary badge-xs">主动</span>
-              <time class="text-xs opacity-50 ml-1">{{ formatMessageTime(message.timestamp) }}</time>
-            </div>
-            <div class="chat-bubble shadow-sm" :class="message.is_proactive ? 'bg-primary/10 border border-primary/20' : 'bg-base-200 text-base-content'">
-              {{ message.content }}
-            </div>
-            <div class="chat-footer opacity-50 text-xs mt-1 flex items-center gap-2">
-              <span>已读</span>
-              <!-- 主动消息提示 -->
-              <span v-if="message.is_proactive" class="text-primary">AI主动发起</span>
-              <!-- 语音播放按钮 -->
+            <h2 class="text-2xl font-bold mb-2">
+              你好！我是{{ currentCharacter?.name || 'AI助手' }}
+            </h2>
+            <p class="text-base-content/70 mb-6">
+              {{ currentCharacter?.description || '很高兴与你对话！有什么我可以帮助你的吗？' }}
+            </p>
+            <div class="flex flex-wrap gap-2 justify-center">
               <button
-                v-if="voiceEnabled && message.message_type === 'text'"
-                @click="speakMessage(message.content)"
-                class="btn btn-ghost btn-xs"
-                title="播放语音"
+                v-for="suggestion in suggestions"
+                :key="suggestion"
+                @click="sendMessage(suggestion)"
+                class="btn btn-outline btn-sm"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M9 9v6a1 1 0 01-1 1H7a1 1 0 01-1-1V9a1 1 0 011-1h1a1 1 0 011 1zM4.5 8A2.5 2.5 0 002 10.5v3A2.5 2.5 0 004.5 16h1.5L12 20V4L6 8H4.5z" />
-                </svg>
+                {{ suggestion }}
               </button>
             </div>
           </div>
 
-          <!-- 用户消息 -->
-          <div v-else class="chat chat-end">
+          <!-- 消息列表 -->
+          <div v-for="message in messages" :key="message.timestamp" class="message-bubble">
+            <!-- 时间分隔线 -->
+            <div v-if="shouldShowTimeStamp(message)" class="divider text-xs text-base-content/40">
+              {{ formatTime(message.timestamp) }}
+            </div>
+
+            <!-- AI消息 -->
+            <div v-if="message.sender === 'ai'" class="chat chat-start">
+              <div class="chat-image avatar">
+                <div class="w-10 rounded-full relative">
+                  <img
+                    :src="currentCharacter?.avatar || 'https://ui-avatars.com/api/?name=AI&size=40&background=6366f1&color=fff'"
+                    :alt="currentCharacter?.name || 'AI'"
+                  />
+                  <!-- 主动消息指示器 -->
+                  <div v-if="message.is_proactive" class="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center" title="主动消息">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-2.5 h-2.5 text-primary-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="chat-header text-sm text-base-content/60 mb-1 flex items-center gap-2">
+                {{ currentCharacter?.name || 'AI助手' }}
+                <!-- 主动消息标签 -->
+                <span v-if="message.is_proactive" class="badge badge-primary badge-xs">主动</span>
+                <time class="text-xs opacity-50 ml-1">{{ formatMessageTime(message.timestamp) }}</time>
+              </div>
+              <div class="chat-bubble shadow-sm bg-base-200 text-base-content">
+                {{ message.content }}
+              </div>
+              <div class="chat-footer opacity-50 text-xs mt-1 flex items-center gap-2">
+                <span>已读</span>
+                <!-- 主动消息提示 -->
+                <span v-if="message.is_proactive" class="text-primary">AI主动发起</span>
+                <!-- 语音播放按钮 -->
+                <button
+                  v-if="voiceEnabled && message.message_type === 'text'"
+                  @click="speakMessage(message.content)"
+                  class="btn btn-ghost btn-xs"
+                  title="播放语音"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M9 9v6a1 1 0 01-1 1H7a1 1 0 01-1-1V9a1 1 0 011-1h1a1 1 0 011 1zM4.5 8A2.5 2.5 0 002 10.5v3A2.5 2.5 0 004.5 16h1.5L12 20V4L6 8H4.5z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- 用户消息 -->
+            <div v-else class="chat chat-end">
+              <div class="chat-image avatar">
+                <div class="w-10 rounded-full">
+                  <img
+                    src="https://ui-avatars.com/api/?name=User&size=40&background=ec4899&color=fff"
+                    alt="User"
+                  />
+                </div>
+              </div>
+              <div class="chat-header text-sm text-base-content/60 mb-1">
+                <time class="text-xs opacity-50 mr-1">{{ formatMessageTime(message.timestamp) }}</time>
+                我
+              </div>
+              <div class="chat-bubble chat-bubble-primary text-primary-content shadow-sm">
+                {{ message.content }}
+              </div>
+              <div class="chat-footer opacity-50 text-xs mt-1">
+                已发送
+              </div>
+            </div>
+          </div>
+
+          <!-- AI思考中指示器 -->
+          <div v-if="chatStore.typing" class="chat chat-start">
             <div class="chat-image avatar">
               <div class="w-10 rounded-full">
                 <img
-                  src="https://ui-avatars.com/api/?name=User&size=40&background=ec4899&color=fff"
-                  alt="User"
+                  :src="currentCharacter?.avatar || 'https://ui-avatars.com/api/?name=AI&size=40&background=6366f1&color=fff'"
+                  :alt="currentCharacter?.name || 'AI'"
                 />
               </div>
             </div>
-            <div class="chat-header text-sm text-base-content/60 mb-1">
-              <time class="text-xs opacity-50 mr-1">{{ formatMessageTime(message.timestamp) }}</time>
-              我
-            </div>
-            <div class="chat-bubble chat-bubble-primary text-primary-content shadow-sm">
-              {{ message.content }}
-            </div>
-            <div class="chat-footer opacity-50 text-xs mt-1">
-              已发送
+            <div class="chat-bubble bg-base-200 text-base-content shadow-sm">
+              <span class="loading loading-dots loading-md"></span>
             </div>
           </div>
         </div>
+      </main>
 
-        <!-- AI思考中指示器 -->
-        <div v-if="chatStore.typing" class="chat chat-start">
-          <div class="chat-image avatar">
-            <div class="w-10 rounded-full">
-              <img
-                :src="currentCharacter?.avatar || 'https://ui-avatars.com/api/?name=AI&size=40&background=6366f1&color=fff'"
-                :alt="currentCharacter?.name || 'AI'"
-              />
-            </div>
-          </div>
-          <div class="chat-bubble bg-base-200 text-base-content shadow-sm">
-            <span class="loading loading-dots loading-md"></span>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- 消息输入区域 -->
-    <footer class="bg-base-100 border-t border-base-200 p-4">
-      <div class="max-w-4xl mx-auto flex items-end gap-2">
-        <!-- 语音录制按钮 -->
-        <button
-          v-if="voiceEnabled"
-          @click="toggleVoiceRecording"
-          class="btn btn-circle"
-          :class="isRecording ? 'btn-error' : 'btn-ghost'"
-          :title="isRecording ? '点击停止录音' : '点击开始录音'"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-          </svg>
-        </button>
-
-        <!-- 附件按钮 -->
-        <button class="btn btn-ghost btn-circle" title="发送图片">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m2.25 15.75l5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-          </svg>
-        </button>
-
-        <!-- 消息输入框 -->
-        <textarea
-          ref="messageInput"
-          v-model="newMessage"
-          @keydown="handleKeydown"
-          @input="adjustTextareaHeight"
-          placeholder="输入消息..."
-          class="textarea textarea-bordered flex-1 resize-none leading-tight max-h-32"
-          rows="1"
-        ></textarea>
-
-        <!-- 发送按钮 -->
-        <button
-          @click="sendUserMessage"
-          :disabled="!newMessage.trim() || chatStore.typing"
-          class="btn btn-primary shadow-sm"
-          title="发送消息"
-        >
-          <span class="hidden sm:inline">发送</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 sm:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
-        </button>
-      </div>
-
-      <!-- 录音指示器 -->
-      <div v-if="isRecording" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-base-100 p-8 rounded-lg shadow-lg text-center">
-          <div class="text-6xl mb-4">🎤</div>
-          <div class="flex justify-center mb-4">
-            <div v-for="i in 5" :key="i" class="voice-wave"></div>
-          </div>
-          <p class="text-lg font-medium mb-4">正在录音...</p>
+      <!-- 消息输入区域 -->
+      <footer class="bg-base-100 border-t border-base-200 p-4">
+        <div class="max-w-4xl mx-auto flex items-end gap-2">
+          <!-- 语音录制按钮 -->
           <button
-            @click="stopVoiceRecording"
-            class="btn btn-error btn-lg mb-4"
+            v-if="voiceEnabled"
+            @click="toggleVoiceRecording"
+            class="btn btn-circle"
+            :class="isRecording ? 'btn-error' : 'btn-ghost'"
+            :title="isRecording ? '点击停止录音' : '点击开始录音'"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
-            停止录音
           </button>
-          <p class="text-sm text-base-content/60">点击上方停止按钮或再次点击麦克风结束录音</p>
+
+          <!-- 附件按钮 -->
+          <button class="btn btn-ghost btn-circle" title="发送图片">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m2.25 15.75l5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+            </svg>
+          </button>
+
+          <!-- 消息输入框 -->
+          <textarea
+            ref="messageInput"
+            v-model="newMessage"
+            @keydown="handleKeydown"
+            @input="adjustTextareaHeight"
+            placeholder="输入消息..."
+            class="textarea textarea-bordered flex-1 resize-none leading-tight max-h-32"
+            rows="1"
+          ></textarea>
+
+          <!-- 发送按钮 -->
+          <button
+            @click="sendUserMessage"
+            :disabled="!newMessage.trim() || chatStore.typing"
+            class="btn btn-primary shadow-sm"
+            title="发送消息"
+          >
+            <span class="hidden sm:inline">发送</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 sm:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
         </div>
-      </div>
-    </footer>
+
+        <!-- 录音指示器 -->
+        <div v-if="isRecording" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-base-100 p-8 rounded-lg shadow-lg text-center">
+            <div class="text-6xl mb-4">🎤</div>
+            <div class="flex justify-center mb-4">
+              <div v-for="i in 5" :key="i" class="voice-wave"></div>
+            </div>
+            <p class="text-lg font-medium mb-4">正在录音...</p>
+            <button
+              @click="stopVoiceRecording"
+              class="btn btn-error btn-lg mb-4"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z" />
+              </svg>
+              停止录音
+            </button>
+            <p class="text-sm text-base-content/60">点击上方停止按钮或再次点击麦克风结束录音</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- 右侧信息侧边栏 -->
+    <aside
+      class="bg-base-200 text-base-content border-l border-base-300 transition-all duration-300 overflow-y-auto hidden xl:block"
+      :class="infoSidebarOpen ? 'w-96' : 'w-0'"
+    >
+      <CharacterInfoSidebar :character="currentCharacter" :messages="messages" />
+    </aside>
   </div>
 </template>
 
@@ -255,6 +299,8 @@ import { useChatStore, type ChatMessage } from '@/stores/chat';
 import { useCharactersStore } from '@/stores/characters';
 import { useGlobalStore } from '@/stores/global';
 import { useNotifications } from '@/composables/useNotifications';
+import ChatSidebar from '@/components/ChatSidebar.vue';
+import CharacterInfoSidebar from '@/components/CharacterInfoSidebar.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -264,6 +310,8 @@ const globalStore = useGlobalStore();
 const notifications = useNotifications();
 
 // 响应式数据
+const sidebarOpen = ref(true);
+const infoSidebarOpen = ref(true); // 控制右侧信息侧边栏
 const newMessage = ref('');
 const voiceEnabled = ref(true);
 const isRecording = ref(false);
@@ -294,6 +342,10 @@ const suggestions = computed(() => {
 });
 
 // 方法
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value;
+};
+
 const shouldShowTimeStamp = (message: ChatMessage) => {
   const messageIndex = messages.value.indexOf(message);
   if (messageIndex === 0) return true;
